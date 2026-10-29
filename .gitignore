@@ -33,3 +33,4 @@ Thumbs.db
 
 # Temporary setup files
 /.laravel-setup.*/
+/.env
