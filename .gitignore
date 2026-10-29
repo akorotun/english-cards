@@ -1,0 +1,35 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Dependencies
+/vendor/
+/node_modules/
+
+# IDE
+/.idea/
+/.vscode/
+/.fleet/
+
+# Laravel
+/public/build/
+/public/hot
+/public/storage/
+/storage/*.key
+/.phpunit.cache/
+/.phpunit.result.cache
+
+# Logs
+npm-debug.log
+yarn-error.log
+
+# Composer
+auth.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary setup files
+/.laravel-setup.*/
