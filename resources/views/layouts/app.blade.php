@@ -18,6 +18,14 @@
     <div class="site-wrap">
         <header class="site-header">
             <a class="brand" href="/" aria-label="English Cards — головна">English <span>Cards</span></a>
+            @auth
+                @if (auth()->user()->hasVerifiedEmail())
+                    <nav aria-label="Основна навігація" class="site-nav">
+                        <a href="{{ route('profiles.index') }}" @if (request()->routeIs('profiles.*')) aria-current="page" @endif>Профілі</a>
+                        <a href="{{ route('vocabulary.import') }}" @if (request()->routeIs('vocabulary.import*')) aria-current="page" @endif>Імпорт слів</a>
+                    </nav>
+                @endif
+            @endauth
             @if ($layoutActiveProfile && ! request()->routeIs('profiles.show'))
                 @include('profiles.partials.theme-menu', ['themeProfile' => $layoutActiveProfile])
             @endif
