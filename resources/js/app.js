@@ -88,12 +88,28 @@ document.querySelectorAll('[data-profile-activate]').forEach((form) => {
         try {
             const result = await submitJson(form);
             applyTheme(result.theme_preference);
+            const profileMenu = document.querySelector('[data-header-menu].profile-menu');
+
+            if (profileMenu) {
+                profileMenu.hidden = false;
+                profileMenu.querySelector('[data-active-profile-initial]').textContent = Array.from(result.profile_name)[0]?.toLocaleUpperCase('uk') || '';
+                profileMenu.querySelectorAll('[data-active-profile-name]').forEach((name) => {
+                    name.textContent = result.profile_name;
+                });
+                const profileTrigger = profileMenu.querySelector('[data-active-profile-trigger]');
+                profileTrigger.setAttribute('aria-label', `Активний профіль: ${result.profile_name}`);
+                profileTrigger.title = `Активний профіль: ${result.profile_name}`;
+            }
             document.querySelectorAll('[data-profile-item]').forEach((item) => {
                 item.querySelector('[data-profile-current]').hidden = item.dataset.profileItem !== String(result.profile_id);
             });
             document.querySelectorAll('[data-theme-form]').forEach((themeForm) => {
                 themeForm.action = result.theme_url;
             });
+            if (!document.querySelector('[data-theme-menu]')) {
+                window.location.reload();
+                return;
+            }
             showFeedback('Активний профіль змінено.');
         } catch {
             showFeedback('Не вдалося обрати профіль. Спробуйте ще раз.');
@@ -102,7 +118,7 @@ document.querySelectorAll('[data-profile-activate]').forEach((form) => {
 });
 
 document.addEventListener('click', (event) => {
-    document.querySelectorAll('[data-theme-menu][open]').forEach((menu) => {
+    document.querySelectorAll('[data-dropdown][open]').forEach((menu) => {
         if (!menu.contains(event.target)) {
             menu.open = false;
         }
@@ -111,11 +127,23 @@ document.addEventListener('click', (event) => {
 
 document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
-        document.querySelectorAll('[data-theme-menu][open]').forEach((menu) => {
+        document.querySelectorAll('[data-dropdown][open]').forEach((menu) => {
             menu.open = false;
             menu.querySelector('summary').focus();
         });
     }
+});
+
+document.querySelectorAll('[data-dropdown]').forEach((menu) => {
+    menu.addEventListener('toggle', () => {
+        if (menu.open) {
+            document.querySelectorAll('[data-dropdown][open]').forEach((otherMenu) => {
+                if (otherMenu !== menu) {
+                    otherMenu.open = false;
+                }
+            });
+        }
+    });
 });
 
 document.querySelectorAll('[data-import-form]').forEach((form) => {

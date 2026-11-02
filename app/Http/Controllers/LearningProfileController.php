@@ -88,6 +88,7 @@ class LearningProfileController extends Controller
         if ($request->expectsJson()) {
             return response()->json([
                 'profile_id' => $ownedProfile->id,
+                'profile_name' => $ownedProfile->name,
                 'theme_preference' => $ownedProfile->theme_preference->value,
                 'theme_url' => route('profiles.theme.update', $ownedProfile),
             ]);

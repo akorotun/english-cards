@@ -178,6 +178,25 @@ class LearningProfileManagementTest extends TestCase
         $this->assertSame($secondProfile->id, session(ActiveLearningProfile::SESSION_KEY));
     }
 
+    public function test_header_shows_the_active_profile_and_updates_after_switching(): void
+    {
+        $user = User::factory()->create();
+        $first = LearningProfile::factory()->for($user)->create(['name' => 'Перший профіль']);
+        $second = LearningProfile::factory()->for($user)->create(['name' => 'Другий профіль']);
+        $this->actingAs($user)->withSession([ActiveLearningProfile::SESSION_KEY => $first->id]);
+
+        $this->get(route('profiles.index'))->assertOk()
+            ->assertSee('aria-label="Активний профіль: Перший профіль"', false)
+            ->assertSee('aria-label="Відкрити меню"', false)
+            ->assertSee('Імпорт слів');
+
+        $this->postJson(route('profiles.activate', $second))->assertOk()
+            ->assertJsonPath('profile_name', 'Другий профіль');
+        $this->get(route('profiles.index'))->assertOk()
+            ->assertSee('aria-label="Активний профіль: Другий профіль"', false)
+            ->assertDontSee('aria-label="Активний профіль: Перший профіль"', false);
+    }
+
     public function test_active_profile_theme_can_be_changed_without_changing_other_profiles(): void
     {
         $user = User::factory()->create();
