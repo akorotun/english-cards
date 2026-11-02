@@ -1,7 +1,7 @@
 # Task 001 — Міграції, Eloquent-моделі та зв'язки English Cards
 
 **Файл:** `docs/tasks/001-database-models.md`  
-**Статус:** у роботі; Етапи 1–4 виконано
+**Статус:** виконано; Етапи 1–5 перевірено
 **Дата створення:** 02.11.2026  
 **Проєкт:** English Cards — Laravel 13 / PHP 8.4 / MySQL (InnoDB)  
 **Тип:** backend / database  
@@ -137,18 +137,18 @@
 
 **Результат етапу:** готова модель технічного обліку пакетів і перевірена цілісність усіх семи прикладних таблиць; база готова для наступних task.
 
-- [ ] Створити `progress_sync_batches` точно за `data-model.md`: `session_uuid` (`CHAR(36)`, PK), `learning_profile_id` (FK → профіль, CASCADE), `payload_hash` (`CHAR(64)`), nullable `result_json` (`JSON`), `processed_at`, індекс `(learning_profile_id, processed_at)`.
-- [ ] Створити `ProgressSyncBatch` із коректним UUID primary key (string, non-incrementing), без стандартних timestamps, потрібними casts; додати зв'язки `LearningProfile::progressSyncBatches()` і `ProgressSyncBatch::learningProfile()`.
-- [ ] Перевірити DB-обмеження: повторний UUID не вставляється, FK працює, видалення профілю каскадно прибирає batches; JSON/час/хеш коректно зберігаються. **Не** реалізовувати API, обчислення прогресу чи ідемпотентний сервіс зараз.
-- [ ] Запустити **повний актуальний набір автоматизованих тестів** на ізольованій MySQL-БД та перевірити міграції з чистого стану тестової БД (без дій над dev/prod даними).
-- [ ] Зіставити всі сім таблиць, ключові індекси, FK, моделі та зв'язки з `docs/architecture/data-model.md`, зокрема `learning_profiles.theme_preference` (`system` за замовчуванням; `system` / `light` / `dark`); скоригувати документ **лише відповідно до погодженої реалізації** й зафіксувати, які поведінкові сервіси залишаються на майбутні task.
-- [ ] Підсумувати виконання task і запропонувати commit message англійською; не створювати коміт без команди користувача.
+- [x] Створити `progress_sync_batches` точно за `data-model.md`: `session_uuid` (`CHAR(36)`, PK), `learning_profile_id` (FK → профіль, CASCADE), `payload_hash` (`CHAR(64)`), nullable `result_json` (`JSON`), `processed_at`, індекс `(learning_profile_id, processed_at)`.
+- [x] Створити `ProgressSyncBatch` із коректним UUID primary key (string, non-incrementing), без стандартних timestamps, потрібними casts; додати зв'язки `LearningProfile::progressSyncBatches()` і `ProgressSyncBatch::learningProfile()`.
+- [x] Перевірити DB-обмеження: повторний UUID не вставляється, FK працює, видалення профілю каскадно прибирає batches; JSON/час/хеш коректно зберігаються. **Не** реалізовувати API, обчислення прогресу чи ідемпотентний сервіс зараз.
+- [x] Запустити **повний актуальний набір автоматизованих тестів** на ізольованій MySQL-БД та перевірити міграції з чистого стану тестової БД (без дій над dev/prod даними).
+- [x] Зіставити всі сім таблиць, ключові індекси, FK, моделі та зв'язки з `docs/architecture/data-model.md`, зокрема `learning_profiles.theme_preference` (`system` за замовчуванням; `system` / `light` / `dark`); скоригувати документ **лише відповідно до погодженої реалізації** й зафіксувати, які поведінкові сервіси залишаються на майбутні task.
+- [x] Підсумувати виконання task і запропонувати commit message англійською; не створювати коміт без команди користувача.
 
 **Implementation notes (заповнює агент після виконання етапу):**
 
-- Змінені файли: _—_
-- Перевірки та результати: _—_
-- Відхилення / блокери: _—_
+- Змінені файли: `database/migrations/2026_11_02_042202_create_progress_sync_batches_table.php`, `app/Models/ProgressSyncBatch.php`, `app/Models/LearningProfile.php`, `database/factories/ProgressSyncBatchFactory.php`, `tests/Feature/ProgressSyncBatchTest.php`, `docs/architecture/data-model.md`, цей task.
+- Перевірки та результати: локальні Docker Compose `app`, `db`, `nginx` працюють; `php artisan db:show --env=testing` підтвердив MySQL 8.4.10 / окрему `english_cards_test`; `php artisan migrate:fresh --env=testing --no-interaction` успішно виконав усі 10 міграцій лише на тестовій БД; `php artisan migrate:status --env=testing --no-interaction` показав усі як Ran; `php artisan test --compact tests/Feature/ProgressSyncBatchTest.php` — 5 passed, 46 assertions; повний `php artisan test --compact` після Pint — 33 passed, 265 assertions; `vendor/bin/pint --dirty --format agent` пройшов. Метадані `information_schema` підтвердили всі сім таблиць, їхні ключові індекси та FK з CASCADE; попередні тести підтверджують `theme_preference` за замовчуванням та допустимі значення.
+- Відхилення / блокери: немає. Dev-БД не очищена й не мігрована. Готова лише DB-основа; авторизація, імпорт, операції редагування/видалення карток і тем з очищенням сиріт, API та транзакційний сервіс синхронізації залишаються окремими task.
 
 ## 5. Критерії завершення всього task (Definition of Done)
 

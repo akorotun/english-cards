@@ -28,6 +28,11 @@ class LearningProfile extends Model
         return $this->hasMany(WordProgress::class);
     }
 
+    public function progressSyncBatches(): HasMany
+    {
+        return $this->hasMany(ProgressSyncBatch::class);
+    }
+
     /**
      * @return array<int, ValidationRule|string>
      */
