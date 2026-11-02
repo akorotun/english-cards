@@ -4,29 +4,30 @@
 
 ## Стан проєкту
 
-**У розробці.** Наразі підготовлено базовий Laravel-проєкт із Docker-оточенням. Функціонал карток, авторизація та адміністративна панель ще не реалізовані.
+**У розробці.** Працюють реєстрація, підтвердження email, вхід, вихід, відновлення пароля та керування навчальними профілями. Після входу один профіль обирається автоматично, а з кількох користувач обирає потрібний. Активний профіль зберігається лише в поточній сесії: після виходу та нового входу вибір із кількох профілів потрібно зробити знову. Назва й оформлення (`system`, `light`, `dark`) зберігаються для кожного профілю окремо.
+
+Екрани навчання й перевірки, імпорт, синхронізація прогресу, Google OAuth, адміністративна панель та production mailer ще не реалізовані. Стартова сторінка після вибору профілю показує лише його назву.
 
 ## Заплановані можливості
 
 - **Вивчення:** показ англійського слова разом з українським перекладом і перегляд карток без оцінювання знань.
 - **Перевірка:** показ слова з можливістю відкрити переклад та позначити «знаю» / «повторити» кнопками або свайпами.
 - **Теми та рівні:** формування наборів карток із кількох тем; добір за рівнем A1–A2.
-- **Прогрес:** індивідуальна історія вивчення та повторення слів.
-- **Керування словником:** імпорт слів і тем із CSV та адміністративна панель.
+- **Прогрес:** індивідуальний прогрес вивчення та повторення слів.
+- **Керування словником:** імпорт слів і тем із CSV; повноцінна адміністративна панель не входить до поточного MVP.
 
 Озвучення слів і приклади вживання розглядаються як подальші покращення.
 
 ## Технології
 
 - Laravel 13, PHP 8.4.27 (PHP-FPM), Composer 2.
-- Nginx, MySQL 8.4.
+- Nginx, MySQL 8.4, Mailpit для локальних листів.
+- Поточні сторінки — Blade зі спільними CSS та JavaScript; Vue 3 і TypeScript уже додані як залежності для майбутніх інтерактивних екранів. Vite/Node 24 працює в окремому Docker Compose-сервісі.
 - Docker Compose; код проєкту зберігається у файловій системі WSL2 Ubuntu (для Windows).
-
-**Примітка:** Node.js / Vite поки не налаштовані як окремий Docker-сервіс. Під час впровадження frontend додамо потрібні команди та конфігурацію.
 
 ## Локальне розгортання
 
-**Потрібно:** Git, Docker Engine із Docker Compose; у Windows — Docker Desktop з увімкненою інтеграцією WSL2 Ubuntu. PHP, Composer і MySQL в Ubuntu встановлювати не потрібно.
+**Потрібно:** Git, Docker Engine із Docker Compose; у Windows — Docker Desktop з увімкненою інтеграцією WSL2 Ubuntu. PHP, Composer, Node.js і MySQL в Ubuntu встановлювати не потрібно.
 
 ### 1. Клонувати репозиторій у WSL2
 
@@ -48,21 +49,25 @@ cp .env.example .env
 sed -i "s/^APP_UID=.*/APP_UID=$(id -u)/; s/^APP_GID=.*/APP_GID=$(id -g)/" .env
 ```
 
-### 3. Запустити Docker і встановити PHP-залежності
+### 3. Запустити Docker і встановити залежності
 
 ```bash
-docker compose up -d --build
-docker compose exec app composer install
+docker compose up -d --build db mailpit app nginx
+docker compose exec -T app composer install
+docker compose run --rm --no-deps node npm ci
 ```
 
 ### 4. Ініціалізувати Laravel
 
 ```bash
-docker compose exec app php artisan key:generate
-docker compose exec app php artisan migrate
+docker compose exec -T app php artisan key:generate
+docker compose exec -T app php artisan migrate
+docker compose up -d node
 ```
 
-Відкрити **http://localhost:8080**.
+Відкрити [застосунок](http://localhost:8080) і [Mailpit](http://localhost:8025). Після реєстрації лист підтвердження email з'явиться в Mailpit; посилання для відновлення пароля також надходить туди. Локальне середовище не надсилає ці листи назовні. `node` запускає Vite dev server; для збирання статичних файлів використовуйте `docker compose run --rm --no-deps node npm run build`.
+
+`php artisan migrate` потрібен для первинного розгортання. Не запускайте скидання або повторну ініціалізацію БД, що вже містить дані.
 
 > Це інструкція для запуску **вже створеного Laravel-проєкту**. Повторно виконувати створення Laravel через `composer create-project` не потрібно.
 
@@ -79,12 +84,17 @@ docker compose down
 docker compose up -d
 
 # Команди Laravel
-docker compose exec app php artisan migrate
-docker compose exec app php artisan route:list
+docker compose exec -T app php artisan migrate:status
+docker compose exec -T app php artisan route:list
+
+# Тести використовують окрему MySQL-БД english_cards_test, зазначену в .env.testing
+docker compose exec -T app php artisan test --compact
 
 # Додавання PHP-пакета
-docker compose exec app composer require vendor/package
+docker compose exec -T app composer require vendor/package
 ```
+
+Перед тестами створіть окрему базу `english_cards_test` і надайте користувачу з `.env.testing` права на неї. `RefreshDatabase` у тестах працює тільки з цією базою; робочу БД для тестів не використовуйте.
 
 **Увага:** `docker compose down -v` видаляє також volume бази даних — не використовуйте цю команду для звичайної зупинки.
 
