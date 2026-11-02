@@ -23,6 +23,11 @@ class User extends Authenticatable
         return $this->hasMany(LearningProfile::class);
     }
 
+    public function topics(): HasMany
+    {
+        return $this->hasMany(Topic::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *
