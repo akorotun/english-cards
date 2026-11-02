@@ -7,6 +7,8 @@ use Database\Factories\WordFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Validator;
 
 #[Fillable(['word_en', 'word_uk', 'image_path', 'example_en', 'example_uk'])]
@@ -14,6 +16,16 @@ class Word extends Model
 {
     /** @use HasFactory<WordFactory> */
     use HasFactory;
+
+    public function topics(): BelongsToMany
+    {
+        return $this->belongsToMany(Topic::class);
+    }
+
+    public function progress(): HasMany
+    {
+        return $this->hasMany(WordProgress::class);
+    }
 
     protected static function booted(): void
     {

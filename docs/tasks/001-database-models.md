@@ -1,7 +1,7 @@
 # Task 001 — Міграції, Eloquent-моделі та зв'язки English Cards
 
 **Файл:** `docs/tasks/001-database-models.md`  
-**Статус:** у роботі; Етапи 1–3 виконано
+**Статус:** у роботі; Етапи 1–4 виконано
 **Дата створення:** 02.11.2026  
 **Проєкт:** English Cards — Laravel 13 / PHP 8.4 / MySQL (InnoDB)  
 **Тип:** backend / database  
@@ -120,18 +120,18 @@
 
 **Результат етапу:** зв'язок many-to-many між темами та словами й незалежний прогрес кожного навчального профілю.
 
-- [ ] Створити `topic_word`: FK `topic_id`, `word_id` з CASCADE, складений PK `(topic_id, word_id)`, індекс `word_id`; без окремого `id`.
-- [ ] Створити `word_progress`: `id`, `learning_profile_id`/`word_id` з CASCADE, `knowledge_level` (`0..3`, default 0), timestamps, `UNIQUE(learning_profile_id, word_id)` і необхідні індекси; DB CHECK — якщо підтримує фактична MySQL згідно з `data-model.md`.
-- [ ] Створити `WordProgress` і завершити Eloquent-зв'язки `Word::topics()`, `Topic::words()`, `Word::progress()`, `LearningProfile::wordProgress()`, `WordProgress::word()` / `learningProfile()` (дотримуватися погодженої семантики навіть якщо фактичні назви методів оберете трохи інакші; відобразити це в `data-model.md`).
-- [ ] Тести: слово в кількох темах без дублювання pivot; дублікати `topic_word`/`word_progress` заборонені; різні профілі мають незалежний прогрес для одного слова; каскади FK при **прямому видаленні** слова, теми чи профілю працюють; відсутній прогрес трактується як рівень `0` у майбутній бізнес-логіці, а не як обов'язок завчасно створювати рядки.
-- [ ] **Окремо зафіксувати межу:** каскадне видалення `topic_word` при видаленні теми **не видаляє автоматично сирітські `words`**. Не реалізовувати очищення сиріт без відповідного сервісного task і не позначати це бізнес-правило реалізованим.
-- [ ] Запустити тести на MySQL та зафіксувати результати/потрібні уточнення документації.
+- [x] Створити `topic_word`: FK `topic_id`, `word_id` з CASCADE, складений PK `(topic_id, word_id)`, індекс `word_id`; без окремого `id`.
+- [x] Створити `word_progress`: `id`, `learning_profile_id`/`word_id` з CASCADE, `knowledge_level` (`0..3`, default 0), timestamps, `UNIQUE(learning_profile_id, word_id)` і необхідні індекси; DB CHECK — якщо підтримує фактична MySQL згідно з `data-model.md`.
+- [x] Створити `WordProgress` і завершити Eloquent-зв'язки `Word::topics()`, `Topic::words()`, `Word::progress()`, `LearningProfile::wordProgress()`, `WordProgress::word()` / `learningProfile()` (дотримуватися погодженої семантики навіть якщо фактичні назви методів оберете трохи інакші; відобразити це в `data-model.md`).
+- [x] Тести: слово в кількох темах без дублювання pivot; дублікати `topic_word`/`word_progress` заборонені; різні профілі мають незалежний прогрес для одного слова; каскади FK при **прямому видаленні** слова, теми чи профілю працюють; відсутній прогрес трактується як рівень `0` у майбутній бізнес-логіці, а не як обов'язок завчасно створювати рядки.
+- [x] **Окремо зафіксувати межу:** каскадне видалення `topic_word` при видаленні теми **не видаляє автоматично сирітські `words`**. Не реалізовувати очищення сиріт без відповідного сервісного task і не позначати це бізнес-правило реалізованим.
+- [x] Запустити тести на MySQL та зафіксувати результати/потрібні уточнення документації.
 
 **Implementation notes (заповнює агент після виконання етапу):**
 
-- Змінені файли: _—_
-- Перевірки та результати: _—_
-- Відхилення / блокери: _—_
+- Змінені файли: `database/migrations/2026_11_02_040706_create_topic_word_table.php`, `database/migrations/2026_11_02_040707_create_word_progress_table.php`, `app/Models/WordProgress.php`, `app/Models/Word.php`, `app/Models/Topic.php`, `app/Models/LearningProfile.php`, `database/factories/WordProgressFactory.php`, `tests/Feature/TopicWordTest.php`, `tests/Feature/WordProgressTest.php`, `docs/architecture/data-model.md`, цей task.
+- Перевірки та результати: локальні Docker Compose `app`, `db`, `nginx` працюють; `php artisan db:show --env=testing` підтвердив MySQL 8.4.10 / `english_cards_test`; `php artisan migrate --env=testing --no-interaction` застосував обидві міграції; `php artisan test --compact tests/Feature/TopicWordTest.php` — 4 passed, 28 assertions; `php artisan test --compact tests/Feature/WordProgressTest.php` — 6 passed, 43 assertions; повний `php artisan test --compact` після Pint — 28 passed, 219 assertions; Pint і `git diff --check` пройшли.
+- Відхилення / блокери: MySQL 8.4.10 підтримує й застосовує `word_progress_knowledge_level_check` (`0..3`); окрема модель `WordProgress` явно використовує таблицю `word_progress`. Відсутність прогресу залишається допустимою і в майбутній бізнес-логіці означає ефективний рівень 0. Пряме видалення теми прибирає `topic_word`, але не видаляє осиротілі `words`; сервіс очищення сиріт лишається окремим task. Dev-БД не мігрована й не очищена; блокерів немає.
 
 ### Етап 5. `progress_sync_batches` та загальна перевірка схеми
 
