@@ -11,5 +11,9 @@
             @csrf
             <button class="button button-secondary" type="submit">Надіслати лист повторно</button>
         </form>
+        <form method="post" action="{{ route('logout') }}" class="logout-form">
+            @csrf
+            <button class="button button-secondary" type="submit">Вийти</button>
+        </form>
     </section>
 @endsection

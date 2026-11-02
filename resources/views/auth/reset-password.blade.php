@@ -25,5 +25,6 @@
             </div>
             <button class="button button-primary" type="submit">Змінити пароль</button>
         </form>
+        <p class="form-footer"><a href="{{ route('login') }}">Повернутися до входу</a></p>
     </section>
 @endsection

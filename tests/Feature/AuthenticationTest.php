@@ -51,7 +51,7 @@ class AuthenticationTest extends TestCase
 
     public function test_guest_auth_pages_show_the_expected_forms(): void
     {
-        $this->get(route('register'))->assertOk()->assertSee('Ім’я першого профілю');
+        $this->get(route('register'))->assertOk()->assertSee('Назва профілю');
         $this->get(route('login'))->assertOk()->assertSee('Забули пароль?');
         $this->get(route('password.request'))->assertOk()->assertSee('Надіслати посилання');
     }

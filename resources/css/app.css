@@ -39,6 +39,10 @@
 
 html { min-width: 280px; }
 
+@media (min-width: 40rem) {
+    html { scrollbar-gutter: stable both-edges; }
+}
+
 body {
     margin: 0;
     min-height: 100svh;
@@ -75,9 +79,9 @@ a:hover { text-decoration-thickness: 2px; }
 .site-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    min-height: 4rem;
+    width: min(100%, 34rem);
+    min-height: 3.5rem;
+    margin-inline: auto;
 }
 
 .brand {
@@ -89,24 +93,6 @@ a:hover { text-decoration-thickness: 2px; }
 }
 
 .brand span { color: var(--primary); }
-
-.site-nav { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem; }
-
-.nav-link {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 2.75rem;
-    padding: .5rem .75rem;
-    border: 0;
-    background: transparent;
-    color: var(--text);
-    text-decoration: none;
-    cursor: pointer;
-    border-radius: .75rem;
-}
-
-.nav-link:hover { background: var(--surface-soft); }
 
 .auth-shell { width: min(100%, 34rem); margin: 2rem auto 5rem; }
 
@@ -153,6 +139,28 @@ input:not([type='hidden']) {
 
 input[aria-invalid='true'] { border-color: var(--danger); }
 
+.password-control { position: relative; }
+
+.password-control input { padding-right: 6.5rem; }
+
+.password-toggle {
+    position: absolute;
+    top: 50%;
+    right: .4rem;
+    transform: translateY(-50%);
+    min-height: 2.5rem;
+    padding: .4rem .6rem;
+    border: 0;
+    border-radius: .5rem;
+    background: transparent;
+    color: var(--primary);
+    font-size: .875rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.password-toggle:hover { background: var(--surface-soft); }
+
 .field-error { margin: 0; color: var(--danger); font-size: .9rem; }
 
 .button {
@@ -178,6 +186,10 @@ input[aria-invalid='true'] { border-color: var(--danger); }
 .button-secondary:hover { border-color: var(--primary); }
 
 .form-footer { margin: 1.5rem 0 0; color: var(--muted); text-align: center; }
+
+.logout-form { margin-top: .75rem; }
+
+.logout-form .button { width: 100%; }
 
 .align-right { align-self: flex-end; }
 
