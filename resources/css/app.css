@@ -203,6 +203,30 @@ input[aria-invalid='true'] { border-color: var(--danger); }
     background: var(--surface-soft);
 }
 
+.profile-create { margin-top: 1.5rem; }
+
+.profile-list { display: grid; gap: .75rem; margin: 0; padding: 0; list-style: none; }
+
+.profile-item { padding: 1rem; border: 1px solid var(--border); border-radius: .75rem; background: var(--surface-soft); }
+
+.profile-current { display: block; color: var(--muted); font-size: .9rem; }
+
+.profile-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }
+
+.profile-actions form { display: flex; flex: 1 1 auto; }
+
+.profile-actions .button { flex: 1 1 auto; }
+
+.profile-actions form .button { width: 100%; }
+
+.profile-actions-bottom { margin-top: 1.5rem; }
+
+.profile-setting { margin-top: 1.75rem; }
+
+.profile-setting p { margin: .5rem 0 0; }
+
+h2 { margin: 0; font-size: 1.25rem; }
+
 @media (min-width: 40rem) {
     .site-wrap { padding: 1.5rem 2rem; }
     .auth-shell { margin-top: 4rem; }

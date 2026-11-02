@@ -136,7 +136,7 @@ class AuthenticationTest extends TestCase
         $this->get(route('verification.notice'))->assertOk()->assertSee('Підтвердіть електронну пошту');
 
         $unverified->markEmailAsVerified();
-        $this->get(route('home'))->assertOk();
+        $this->get(route('home'))->assertRedirect(route('profiles.index'));
     }
 
     public function test_signed_verification_link_verifies_only_its_owner(): void

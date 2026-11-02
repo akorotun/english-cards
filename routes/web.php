@@ -4,6 +4,8 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\LearningProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -30,4 +32,11 @@ Route::middleware('auth')->group(function (): void {
         ->middleware('throttle:5,1')->name('verification.send');
 });
 
-Route::view('/home', 'auth.ready')->middleware(['auth', 'verified'])->name('home');
+Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::get('/home', HomeController::class)->name('home');
+    Route::get('/profiles', [LearningProfileController::class, 'index'])->name('profiles.index');
+    Route::post('/profiles', [LearningProfileController::class, 'store'])->name('profiles.store');
+    Route::get('/profiles/{profile}', [LearningProfileController::class, 'show'])->whereNumber('profile')->name('profiles.show');
+    Route::patch('/profiles/{profile}', [LearningProfileController::class, 'update'])->whereNumber('profile')->name('profiles.update');
+    Route::post('/profiles/{profile}/activate', [LearningProfileController::class, 'activate'])->whereNumber('profile')->name('profiles.activate');
+});
