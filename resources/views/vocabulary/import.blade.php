@@ -33,8 +33,8 @@
             @if ($isAdmin)
                 <fieldset class="import-scope">
                     <legend>Тип імпорту</legend>
-                    <label><input type="radio" name="scope" value="private" @checked(old('scope', 'private') !== 'system')> Приватні теми</label>
-                    <label><input type="radio" name="scope" value="system" @checked(old('scope') === 'system')> Системні теми</label>
+                    <label><input type="radio" name="scope" value="private" @checked(old('scope', $preview['scope'] ?? 'private') !== 'system')> Приватні теми</label>
+                    <label><input type="radio" name="scope" value="system" @checked(old('scope', $preview['scope'] ?? 'private') === 'system')> Системні теми</label>
                     <p class="hint">Системні теми будуть доступні всім користувачам.</p>
                 </fieldset>
             @else

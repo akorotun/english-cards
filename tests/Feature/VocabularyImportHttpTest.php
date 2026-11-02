@@ -82,7 +82,9 @@ class VocabularyImportHttpTest extends TestCase
         $admin = User::factory()->create();
         config()->set('admin.emails', $admin->email);
         $this->actingAs($admin);
-        $this->get(route('vocabulary.import'))->assertOk()->assertSee('Системні теми');
+        $this->get(route('vocabulary.import'))->assertOk()
+            ->assertSee('value="private" checked', false)
+            ->assertSee('Системні теми');
 
         $this->post(route('vocabulary.import.preview'), [
             'scope' => 'system',
@@ -90,7 +92,9 @@ class VocabularyImportHttpTest extends TestCase
         ])->assertRedirect(route('vocabulary.import'));
         $preview = session('import_preview');
         $this->withCookie(config('session.cookie'), session()->getId());
-        $this->get(route('vocabulary.import'))->assertSee('Підтверджую імпорт системних тем');
+        $this->get(route('vocabulary.import'))
+            ->assertSee('value="system" checked', false)
+            ->assertSee('Підтверджую імпорт системних тем');
         $this->post(route('vocabulary.import.confirm'), ['scope' => 'system', 'token' => $preview['token']])
             ->assertSessionHasErrors('system_confirmation');
         $this->assertSame(0, Topic::count());
