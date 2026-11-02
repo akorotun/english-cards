@@ -20,8 +20,12 @@
 
         <div class="profile-setting">
             <h2>Тема оформлення</h2>
-            <p>{{ $themeLabel }}</p>
-            <p class="hint">Змінити тему можна буде після додавання налаштувань оформлення.</p>
+            <p class="hint"><span data-theme-current-label>{{ $themeLabel }}</span>. Системна тема повторює налаштування вашого пристрою.</p>
+            @if ($isActive)
+                @include('profiles.partials.theme-menu', ['themeProfile' => $profile])
+            @else
+                <p class="hint">Щоб змінити тему, спочатку оберіть цей профіль.</p>
+            @endif
         </div>
 
         <div class="profile-actions profile-actions-bottom">

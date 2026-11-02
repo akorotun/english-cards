@@ -177,4 +177,72 @@ class LearningProfileManagementTest extends TestCase
         $this->get(route('home'))->assertOk()->assertSee('Другий');
         $this->assertSame($secondProfile->id, session(ActiveLearningProfile::SESSION_KEY));
     }
+
+    public function test_active_profile_theme_can_be_changed_without_changing_other_profiles(): void
+    {
+        $user = User::factory()->create();
+        $first = LearningProfile::factory()->for($user)->create();
+        $second = LearningProfile::factory()->for($user)->create(['theme_preference' => ThemePreference::Dark]);
+        $this->actingAs($user)->withSession([ActiveLearningProfile::SESSION_KEY => $first->id]);
+
+        $this->get(route('profiles.show', $first))->assertOk()->assertSee('Вибрати тему оформлення');
+
+        foreach (['light', 'dark', 'system'] as $theme) {
+            $this->patchJson(route('profiles.theme.update', $first), ['theme_preference' => $theme])
+                ->assertOk()->assertJsonPath('theme_preference', $theme);
+            $this->assertSame($theme, $first->fresh()->theme_preference->value);
+            $this->assertSame(ThemePreference::Dark, $second->fresh()->theme_preference);
+            $this->get(route('home'))->assertOk()->assertSee('data-theme="'.$theme.'"', false);
+        }
+
+    }
+
+    public function test_theme_change_rejects_invalid_values_and_inactive_or_foreign_profiles(): void
+    {
+        $user = User::factory()->create();
+        $active = LearningProfile::factory()->for($user)->create();
+        $inactive = LearningProfile::factory()->for($user)->create();
+        $foreign = LearningProfile::factory()->for(User::factory()->create())->create();
+        $this->actingAs($user)->withSession([ActiveLearningProfile::SESSION_KEY => $active->id]);
+
+        $this->patchJson(route('profiles.theme.update', $active), ['theme_preference' => 'purple'])
+            ->assertUnprocessable()->assertJsonValidationErrors('theme_preference');
+        $this->patchJson(route('profiles.theme.update', $active), [])
+            ->assertUnprocessable()->assertJsonValidationErrors('theme_preference');
+        $this->patchJson(route('profiles.theme.update', $inactive), ['theme_preference' => 'dark'])->assertNotFound();
+        $this->patchJson(route('profiles.theme.update', $foreign), ['theme_preference' => 'dark'])->assertNotFound();
+
+        $this->assertSame(ThemePreference::System, $active->fresh()->theme_preference);
+        $this->assertSame(ThemePreference::System, $inactive->fresh()->theme_preference);
+        $this->assertSame(ThemePreference::System, $foreign->fresh()->theme_preference);
+    }
+
+    public function test_theme_follows_the_active_profile_and_unselected_pages_use_system_default(): void
+    {
+        $user = User::factory()->create();
+        $light = LearningProfile::factory()->for($user)->create(['theme_preference' => ThemePreference::Light]);
+        $dark = LearningProfile::factory()->for($user)->create(['theme_preference' => ThemePreference::Dark]);
+        $this->actingAs($user);
+
+        $this->get(route('profiles.index'))->assertOk()->assertSee('data-theme="system"', false);
+        $this->postJson(route('profiles.activate', $light))->assertOk()
+            ->assertJsonPath('theme_preference', 'light');
+        $this->get(route('profiles.index'))->assertOk()->assertSee('data-theme="light"', false);
+        $this->postJson(route('profiles.activate', $dark))->assertOk()
+            ->assertJsonPath('theme_preference', 'dark');
+        $this->get(route('home'))->assertOk()->assertSee('data-theme="dark"', false);
+        $this->get(route('profiles.show', $light))->assertOk()->assertSee('Щоб змінити тему, спочатку оберіть цей профіль.');
+    }
+
+    public function test_theme_update_requires_authentication_and_verified_email(): void
+    {
+        $user = User::factory()->unverified()->create();
+        $profile = LearningProfile::factory()->for($user)->create();
+
+        $this->patch(route('profiles.theme.update', $profile), ['theme_preference' => 'dark'])
+            ->assertRedirect(route('login'));
+        $this->actingAs($user)->patch(route('profiles.theme.update', $profile), ['theme_preference' => 'dark'])
+            ->assertRedirect(route('verification.notice'));
+        $this->assertSame(ThemePreference::System, $profile->fresh()->theme_preference);
+    }
 }

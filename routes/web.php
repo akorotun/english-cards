@@ -38,5 +38,6 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::post('/profiles', [LearningProfileController::class, 'store'])->name('profiles.store');
     Route::get('/profiles/{profile}', [LearningProfileController::class, 'show'])->whereNumber('profile')->name('profiles.show');
     Route::patch('/profiles/{profile}', [LearningProfileController::class, 'update'])->whereNumber('profile')->name('profiles.update');
+    Route::patch('/profiles/{profile}/theme', [LearningProfileController::class, 'updateTheme'])->whereNumber('profile')->name('profiles.theme.update');
     Route::post('/profiles/{profile}/activate', [LearningProfileController::class, 'activate'])->whereNumber('profile')->name('profiles.activate');
 });

@@ -32,6 +32,7 @@
                 <div class="password-control">
                     <input id="password_confirmation" name="password_confirmation" type="password" autocomplete="new-password" required>
                     <button class="password-toggle" type="button" data-password-toggle="password_confirmation" data-password-label="підтвердження пароля" aria-controls="password_confirmation" aria-pressed="false" aria-label="Показати підтвердження пароля">Показати</button>
+                </div>
             </div>
             <button class="button button-primary" type="submit">Зареєструватися</button>
         </form>

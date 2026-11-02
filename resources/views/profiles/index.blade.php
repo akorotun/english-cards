@@ -12,15 +12,13 @@
         @else
             <ul class="profile-list">
                 @foreach ($profiles as $profile)
-                    <li class="profile-item">
+                    <li class="profile-item" data-profile-item="{{ $profile->id }}">
                         <div>
                             <strong>{{ $profile->name }}</strong>
-                            @if ($activeProfile?->is($profile))
-                                <span class="profile-current">Активний профіль</span>
-                            @endif
+                            <span class="profile-current" data-profile-current @if (! $activeProfile?->is($profile)) hidden @endif>Активний профіль</span>
                         </div>
                         <div class="profile-actions">
-                            <form method="post" action="{{ route('profiles.activate', $profile) }}">
+                            <form method="post" action="{{ route('profiles.activate', $profile) }}" data-profile-activate>
                                 @csrf
                                 <button class="button button-primary" type="submit">Обрати</button>
                             </form>
