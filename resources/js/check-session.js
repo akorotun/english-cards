@@ -87,9 +87,9 @@ export function createCheckController(initialState, persist, random = Math.rando
         state: () => state,
         revealed: () => revealed,
         busy: () => busy,
-        reveal: () => { if (!busy && state.status === 'in_progress') revealed = true; },
+        toggleTranslation: () => { if (!busy && state.status === 'in_progress') revealed = !revealed; },
         async answer(value) {
-            if (busy || !revealed || state.status !== 'in_progress') return false;
+            if (busy || state.status !== 'in_progress') return false;
             busy = true;
             try {
                 const next = nextCheckState(state, value, random);
@@ -120,6 +120,11 @@ export async function initializeCheckSession(root) {
     const reveal = root.querySelector('[data-check-reveal]');
     const answers = root.querySelector('[data-check-answers]');
     const audioFeedback = root.querySelector('[data-check-audio-feedback]');
+    const stop = root.querySelector('[data-check-exit]');
+    const dialog = root.querySelector('[data-check-dialog]');
+    const dialogError = root.querySelector('[data-check-dialog-error]');
+    const continueButton = root.querySelector('[data-check-continue]');
+    const confirmButton = root.querySelector('[data-check-confirm]');
     const showError = (message) => { error.textContent = message; error.hidden = false; };
     let controller;
     try {
@@ -142,12 +147,16 @@ export async function initializeCheckSession(root) {
         const order = state.round === 1 ? state.first_order : state.repeat_order;
         return state.cards.find((card) => card.id === order[state.position]);
     };
-    function render() {
+    function render(resetAudio = true) {
         const state = controller.state();
-        const finished = state.status === 'ready_to_sync';
+        const finished = state.status === 'ready_to_sync' || state.status === 'interrupted';
         cardScreen.hidden = finished;
         complete.hidden = !finished;
-        if (finished) { complete.focus(); return; }
+        if (finished) {
+            root.querySelector('[data-check-complete-count]').textContent = state.answers.length;
+            complete.focus();
+            return;
+        }
         const order = state.round === 1 ? state.first_order : state.repeat_order;
         root.querySelector('[data-check-round]').textContent = state.round === 1 ? 'Коло 1' : 'Коло 2 — повторення';
         root.querySelector('[data-check-progress]').max = order.length;
@@ -155,13 +164,13 @@ export async function initializeCheckSession(root) {
         root.querySelector('[data-check-counter]').textContent = `${state.position + 1} / ${order.length}`;
         root.querySelector('[data-check-en]').textContent = current().word_en;
         const translation = root.querySelector('[data-check-uk]');
-        translation.textContent = controller.revealed() ? current().word_uk : '';
-        translation.hidden = !controller.revealed();
-        reveal.hidden = controller.revealed();
-        answers.hidden = !controller.revealed();
-        audioFeedback.hidden = true;
+        translation.textContent = current().word_uk;
+        translation.setAttribute('aria-hidden', String(!controller.revealed()));
+        reveal.setAttribute('aria-expanded', String(controller.revealed()));
+        answers.hidden = false;
+        if (resetAudio) audioFeedback.hidden = true;
     }
-    reveal.addEventListener('click', () => { controller.reveal(); render(); if (controller.revealed()) answers.querySelector('button').focus(); });
+    reveal.addEventListener('click', () => { controller.toggleTranslation(); render(false); });
     answers.querySelectorAll('button').forEach((button) => button.addEventListener('click', async () => {
         if (controller.busy()) return;
         error.hidden = true;
@@ -180,13 +189,32 @@ export async function initializeCheckSession(root) {
             audioFeedback.hidden = false;
         });
     });
-    document.querySelector('[data-check-exit]')?.addEventListener('click', async (event) => {
-        if (controller.state().status !== 'in_progress') return;
-        event.preventDefault();
-        if (controller.busy() || !window.confirm('Завершити перевірку? Зроблені відповіді залишаться в цьому браузері.')) return;
-        const destination = event.currentTarget.href;
-        try { if (await controller.interrupt()) window.location.assign(destination); }
-        catch { showError('Не вдалося зберегти стан перевірки. Спробуйте завершити ще раз.'); }
+    stop.addEventListener('click', () => {
+        if (controller.busy()) return;
+        dialogError.hidden = true;
+        dialog.showModal();
+    });
+    continueButton.addEventListener('click', () => {
+        if (!controller.busy()) dialog.close();
+    });
+    dialog.addEventListener('cancel', (event) => {
+        if (controller.busy()) event.preventDefault();
+    });
+    confirmButton.addEventListener('click', async () => {
+        if (controller.busy()) return;
+        dialogError.hidden = true;
+        const pending = controller.interrupt();
+        confirmButton.disabled = true;
+        continueButton.disabled = true;
+        try {
+            if (await pending) { dialog.close(); render(); }
+        } catch {
+            dialogError.textContent = 'Не вдалося зберегти стан перевірки. Спробуйте ще раз.';
+            dialogError.hidden = false;
+        } finally {
+            confirmButton.disabled = false;
+            continueButton.disabled = false;
+        }
     });
     window.addEventListener('beforeunload', (event) => {
         if (controller.state().status === 'in_progress' || controller.busy()) { event.preventDefault(); event.returnValue = ''; }

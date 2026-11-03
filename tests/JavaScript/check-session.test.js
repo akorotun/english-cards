@@ -45,7 +45,7 @@ test('repeat round shuffles only unknown words after all initial answers', () =>
     ]);
 });
 
-test('reveal gates answers; pending write blocks duplicate; failed write preserves state for retry', async () => {
+test('answers work without revealing; pending write blocks duplicate and failed write preserves state', async () => {
     let finish;
     const writes = [];
     let fail = false;
@@ -54,9 +54,7 @@ test('reveal gates answers; pending write blocks duplicate; failed write preserv
         if (fail) return Promise.reject(new Error('disk'));
         return new Promise((resolve) => { finish = resolve; });
     });
-    assert.equal(await controller.answer('know'), false);
     assert.equal(controller.revealed(), false);
-    controller.reveal();
     const pending = controller.answer('dont_know');
     assert.equal(await controller.answer('know'), false);
     assert.equal(controller.state().answers.length, 0);
@@ -64,7 +62,7 @@ test('reveal gates answers; pending write blocks duplicate; failed write preserv
     assert.equal(await pending, true);
     assert.equal(controller.revealed(), false);
     assert.equal(controller.state().round, 2);
-    controller.reveal();
+    controller.toggleTranslation();
     fail = true;
     await assert.rejects(controller.answer('know'));
     assert.equal(controller.revealed(), true);
@@ -105,4 +103,134 @@ test('storage failures are propagated and success waits for transaction completi
     tx.error = new Error('quota');
     tx.onabort();
     await assert.rejects(failed, /quota/);
+});
+
+test('screen reveals the translation and advances only after a successful IndexedDB transaction', async () => {
+    const { initializeCheckSession } = await import('../../resources/js/check-session.js');
+    const element = () => ({
+        hidden: false, textContent: '', disabled: false, dataset: {}, handlers: {}, attributes: {},
+        setAttribute(name, value) { this.attributes[name] = value; },
+        addEventListener(type, handler) { this.handlers[type] = handler; },
+        focus() {},
+        showModal() { this.open = true; },
+        close() { this.open = false; },
+        click() { return this.handlers.click?.({ currentTarget: this }); },
+    });
+    const selectors = [
+        'error', 'content', 'card-screen', 'complete', 'reveal', 'answers', 'audio-feedback',
+        'round', 'progress', 'counter', 'en', 'uk', 'speak', 'exit', 'dialog', 'dialog-error',
+        'continue', 'confirm', 'complete-count',
+    ];
+    const elements = Object.fromEntries(selectors.map((name) => [`[data-check-${name}]`, element()]));
+    const unknown = element(); unknown.dataset.checkAnswer = 'dont_know';
+    const known = element(); known.dataset.checkAnswer = 'know';
+    const buttons = [unknown, known];
+    elements['[data-check-answers]'].querySelectorAll = () => buttons;
+    elements['[data-check-answers]'].querySelector = () => unknown;
+    const root = {
+        dataset: { userId: '1', profileId: '2', cards: JSON.stringify(cards.slice(0, 2)) },
+        querySelector: (selector) => elements[selector],
+    };
+    const saved = [];
+    let pendingTransaction;
+    const db = {
+        createObjectStore: () => ({ createIndex() {} }),
+        transaction() {
+            const tx = {
+                objectStore: () => ({ add: (value) => { tx.value = structuredClone(value); }, put: (value) => { tx.value = structuredClone(value); } }),
+                complete() { saved.push(tx.value); tx.oncomplete(); },
+                abort() { tx.error = new Error('quota'); tx.onabort(); },
+            };
+            if (!saved.length) queueMicrotask(() => tx.complete());
+            else pendingTransaction = tx;
+            return tx;
+        },
+    };
+    const indexedDB = { open() {
+        const request = { result: db };
+        queueMicrotask(() => { request.onupgradeneeded(); request.onsuccess(); });
+        return request;
+    } };
+    const oldWindow = globalThis.window;
+    const oldDocument = globalThis.document;
+    globalThis.window = { indexedDB, crypto: { randomUUID: () => 'test-uuid' }, addEventListener() {} };
+    globalThis.document = { querySelector: () => null };
+    try {
+        await initializeCheckSession(root);
+        assert.equal(saved.length, 1);
+        assert.equal(saved[0].user_id, 1);
+        assert.equal(saved[0].learning_profile_id, 2);
+        assert.equal(elements['[data-check-uk]'].attributes['aria-hidden'], 'true');
+        assert.ok(elements['[data-check-uk]'].textContent);
+        assert.equal(elements['[data-check-reveal]'].disabled, false);
+        assert.equal(elements['[data-check-answers]'].hidden, false);
+        const firstWord = elements['[data-check-en]'].textContent;
+        const knownWithoutReveal = known.click();
+        assert.equal(elements['[data-check-en]'].textContent, firstWord);
+        pendingTransaction.complete();
+        await knownWithoutReveal;
+        assert.notEqual(elements['[data-check-en]'].textContent, firstWord);
+        assert.equal(saved[1].answers[0].first, 'know');
+        assert.equal(elements['[data-check-answers]'].hidden, false);
+        elements['[data-check-speak]'].click();
+        assert.equal(saved.length, 2);
+        elements['[data-check-reveal]'].click();
+        assert.equal(elements['[data-check-reveal]'].attributes['aria-expanded'], 'true');
+        assert.equal(elements['[data-check-reveal]'].disabled, false);
+        assert.equal(elements['[data-check-uk]'].attributes['aria-hidden'], 'false');
+        assert.ok(elements['[data-check-uk]'].textContent);
+        elements['[data-check-reveal]'].click();
+        assert.equal(elements['[data-check-reveal]'].attributes['aria-expanded'], 'false');
+        assert.equal(elements['[data-check-uk]'].attributes['aria-hidden'], 'true');
+        elements['[data-check-reveal]'].click();
+        assert.equal(elements['[data-check-uk]'].attributes['aria-hidden'], 'false');
+        assert.equal(saved.length, 2);
+        assert.equal(elements['[data-check-answers]'].hidden, false);
+        const previousWord = elements['[data-check-en]'].textContent;
+        const failed = unknown.click();
+        assert.equal(unknown.disabled, true);
+        assert.equal(elements['[data-check-en]'].textContent, previousWord);
+        pendingTransaction.abort();
+        await failed;
+        assert.equal(elements['[data-check-en]'].textContent, previousWord);
+        assert.equal(elements['[data-check-uk]'].attributes['aria-hidden'], 'false');
+        assert.equal(elements['[data-check-error]'].hidden, false);
+        assert.equal(saved.length, 2);
+        const retry = unknown.click();
+        pendingTransaction.complete();
+        await retry;
+        assert.equal(saved.length, 3);
+        assert.equal(saved[2].answers.length, 2);
+        assert.equal(saved[2].answers[1].first, 'dont_know');
+        assert.equal(elements['[data-check-round]'].textContent, 'Коло 2 — повторення');
+        assert.equal(elements['[data-check-uk]'].attributes['aria-hidden'], 'true');
+        assert.equal(elements['[data-check-reveal]'].attributes['aria-expanded'], 'false');
+        assert.equal(elements['[data-check-reveal]'].disabled, false);
+        assert.equal(elements['[data-check-answers]'].hidden, false);
+        elements['[data-check-exit]'].click();
+        assert.equal(elements['[data-check-dialog]'].open, true);
+        elements['[data-check-continue]'].click();
+        assert.equal(elements['[data-check-dialog]'].open, false);
+        assert.equal(saved.length, 3);
+        elements['[data-check-exit]'].click();
+        const failedStop = elements['[data-check-confirm]'].click();
+        assert.equal(elements['[data-check-continue]'].disabled, true);
+        pendingTransaction.abort();
+        await failedStop;
+        assert.equal(elements['[data-check-dialog]'].open, true);
+        assert.equal(elements['[data-check-dialog-error]'].hidden, false);
+        assert.equal(elements['[data-check-card-screen]'].hidden, false);
+        const stop = elements['[data-check-confirm]'].click();
+        pendingTransaction.complete();
+        await stop;
+        assert.equal(saved[3].status, 'interrupted');
+        assert.equal(saved[3].answers.length, 2);
+        assert.equal(elements['[data-check-dialog]'].open, false);
+        assert.equal(elements['[data-check-complete]'].hidden, false);
+        assert.equal(elements['[data-check-complete-count]'].textContent, 2);
+        assert.equal(elements['[data-check-card-screen]'].hidden, true);
+    } finally {
+        globalThis.window = oldWindow;
+        globalThis.document = oldDocument;
+    }
 });
