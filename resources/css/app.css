@@ -436,6 +436,10 @@ button:disabled { opacity: .65; cursor: wait; }
 .pagination-disabled { opacity: .65; cursor: default; }
 .topic-import { margin: 1.5rem 0 0; }
 
+.learning-option { display: flex; align-items: center; gap: .65rem; min-height: 3rem; overflow-wrap: anywhere; cursor: pointer; }
+.learning-option input { flex: none; width: 1.25rem; height: 1.25rem; margin: 0; accent-color: var(--primary); }
+.learning-option span { min-width: 0; }
+
 .topic-back { display: inline-block; min-height: 2.75rem; margin-bottom: 1rem; padding-block: .5rem; }
 .topic-detail h1, .topic-detail .topic-meta { overflow-wrap: anywhere; }
 .topic-detail .topic-meta { margin-block: 1rem 1.5rem; }

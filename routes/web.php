@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\LearningController;
 use App\Http\Controllers\LearningProfileController;
 use App\Http\Controllers\TopicController;
 use App\Http\Controllers\VocabularyImportController;
@@ -36,6 +37,8 @@ Route::middleware('auth')->group(function (): void {
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/home', HomeController::class)->name('home');
+    Route::get('/learning', [LearningController::class, 'index'])->name('learning.index');
+    Route::get('/learning/selection', [LearningController::class, 'selection'])->name('learning.selection');
     Route::get('/topics', [TopicController::class, 'index'])->name('topics.index');
     Route::get('/topics/{topic}', [TopicController::class, 'show'])->whereNumber('topic')->name('topics.show');
     Route::get('/vocabulary/import', [VocabularyImportController::class, 'index'])->name('vocabulary.import');
