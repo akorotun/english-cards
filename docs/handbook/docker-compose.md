@@ -280,6 +280,7 @@ docker compose down
 - Основна зупинка: `docker compose down`.
 - Artisan: `docker compose exec app php artisan ...`.
 - Тести: `docker compose exec app php artisan test`.
+- Перевірити, що frontend збирається: `docker compose run --rm --no-deps node npm run build`.
 
 **Головне правило:** для виконання команд усередині запущеного PHP-контейнера використовуємо `docker compose exec app`.
 
