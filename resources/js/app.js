@@ -145,13 +145,13 @@ document.querySelectorAll('[data-dropdown]').forEach((menu) => {
     });
 });
 
+import { closeFilterAfterFocusChange } from './filter-menu';
+
 document.querySelectorAll('[data-filter-menu]').forEach((menu) => {
     const trigger = menu.querySelector('summary');
 
-    menu.addEventListener('focusout', (event) => {
-        if (!menu.contains(event.relatedTarget)) {
-            menu.open = false;
-        }
+    menu.addEventListener('focusout', () => {
+        closeFilterAfterFocusChange(menu);
     });
 
     menu.addEventListener('change', (event) => {
