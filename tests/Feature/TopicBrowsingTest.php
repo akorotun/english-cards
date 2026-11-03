@@ -250,7 +250,7 @@ class TopicBrowsingTest extends TestCase
         $response = $this->actingAs($user)->get(route('topics.index', ['scope' => 'private', 'level' => 'A1']));
 
         $response->assertOk()->assertSee($topic->name)->assertDontSee($topic->name, false)
-            ->assertSee(url()->query('/topics/'.$topic->id, ['scope' => 'private', 'level' => 'A1', 'topics_page' => 1]));
+            ->assertSee(route('topics.show', ['topic' => $topic->id, 'scope' => 'private', 'level' => 'A1', 'topics_page' => 1]));
     }
 
     public function test_counting_words_does_not_issue_queries_per_topic(): void

@@ -37,6 +37,7 @@ Route::middleware('auth')->group(function (): void {
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/home', HomeController::class)->name('home');
     Route::get('/topics', [TopicController::class, 'index'])->name('topics.index');
+    Route::get('/topics/{topic}', [TopicController::class, 'show'])->whereNumber('topic')->name('topics.show');
     Route::get('/vocabulary/import', [VocabularyImportController::class, 'index'])->name('vocabulary.import');
     Route::post('/vocabulary/import/preview', [VocabularyImportController::class, 'preview'])->name('vocabulary.import.preview');
     Route::post('/vocabulary/import/confirm', [VocabularyImportController::class, 'confirm'])->name('vocabulary.import.confirm');

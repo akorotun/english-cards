@@ -57,7 +57,7 @@
                             <div><dt>Тип</dt><dd>{{ $topic->user_id === null ? 'Системна' : 'Приватна' }}</dd></div>
                         </dl>
                         <p class="topic-count">{{ $wordCount }} {{ $wordLabel }}</p>
-                        <a class="button button-secondary" href="{{ url()->query('/topics/'.$topic->id, [...$filters, 'topics_page' => $topics->currentPage()]) }}" aria-label="Переглянути тему {{ $topic->name }}">Переглянути</a>
+                        <a class="button button-secondary" href="{{ route('topics.show', ['topic' => $topic->id, ...$filters, 'topics_page' => $topics->currentPage()]) }}" aria-label="Переглянути тему {{ $topic->name }}">Переглянути</a>
                     </li>
                 @endforeach
             </ul>
