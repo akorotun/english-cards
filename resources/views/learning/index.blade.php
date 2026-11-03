@@ -36,6 +36,7 @@
                     <p>{{ $needsReview ? 'За фільтром немає карток. Вимкніть «Потрібно повторити» або змініть теми.' : 'У вибраних темах поки немає слів. Оберіть інші теми.' }}</p>
                 @else
                     <p>{{ $needsReview ? 'Фільтр: Потрібно повторити (рівні 0–2).' : 'Усі картки вибраних тем, незалежно від рівня знання.' }}</p>
+                    <a class="button button-primary" href="{{ route('learning.cards', ['topic_ids' => $selectedTopics->modelKeys(), 'needs_review' => (int) $needsReview]) }}">Почати вивчення</a>
                 @endif
             </div>
         @endif

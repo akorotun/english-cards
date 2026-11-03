@@ -40,7 +40,7 @@ class LearningSelectionTest extends TestCase
     /** @return array<string, array{string}> */
     public static function learningRoutes(): array
     {
-        return ['topic selection' => ['learning.index'], 'direct collection request' => ['learning.selection']];
+        return ['topic selection' => ['learning.index'], 'direct collection request' => ['learning.selection'], 'cards' => ['learning.cards']];
     }
 
     #[DataProvider('invalidProfiles')]
@@ -63,7 +63,7 @@ class LearningSelectionTest extends TestCase
 
         $this->actingAs($user);
 
-        foreach (['learning.index', 'learning.selection'] as $route) {
+        foreach (['learning.index', 'learning.selection', 'learning.cards'] as $route) {
             $this->withSession([ActiveLearningProfile::SESSION_KEY => $profileId])
                 ->get(route($route, ['topic_ids' => [$topic->id], 'learning_profile_id' => $ownProfile->id]))
                 ->assertRedirect(route('profiles.index'))
@@ -117,7 +117,7 @@ class LearningSelectionTest extends TestCase
             ->get(route('learning.selection', ['topic_ids' => [$own->id, $system->id], 'word_ids' => [999]]));
 
         $response->assertOk()->assertSee('Підбірку сформовано')->assertSee('Унікальних карток: <strong>2</strong>', false)
-            ->assertSee('Усі картки вибраних тем')->assertDontSee('Почати вивчення');
+            ->assertSee('Усі картки вибраних тем')->assertSee('Почати вивчення');
         $this->assertSame([$system->id, $own->id], $response->viewData('selectedTopics')->modelKeys());
         $this->assertSame([$shared->id, $different->id], $response->viewData('words')->modelKeys());
         $this->assertSame(['світло', 'легкий'], $response->viewData('words')->pluck('word_uk')->all());
@@ -283,5 +283,40 @@ class LearningSelectionTest extends TestCase
             ->assertSee($topic->level)->assertDontSee($topic->level, false);
         $this->assertMatchesRegularExpression('/value="'.$topic->id.'"\s+checked/', $response->getContent());
         $this->assertMatchesRegularExpression('/name="needs_review" value="1"\s+checked/', $response->getContent());
+    }
+
+    public function test_cards_revalidate_topics_and_profile_and_leave_progress_unchanged(): void
+    {
+        $profile = LearningProfile::factory()->create();
+        $other = LearningProfile::factory()->for($profile->user)->create();
+        $shared = Word::factory()->create(['word_en' => 'light', 'word_uk' => 'світло']);
+        $different = Word::factory()->create(['word_en' => 'light', 'word_uk' => 'легкий']);
+        $system = Topic::factory()->hasAttached($shared)->create();
+        $own = Topic::factory()->for($profile->user)->hasAttached($shared)->hasAttached($different)->create();
+        $foreign = Topic::factory()->for(User::factory())->hasAttached(Word::factory()->create(['word_en' => 'secret']))->create();
+        WordProgress::factory()->for($other)->for($shared)->create(['knowledge_level' => 3]);
+        $before = DB::table('word_progress')->get()->toJson();
+        $parameters = ['topic_ids' => [$system->id, $own->id], 'needs_review' => 1];
+        $this->actingAs($profile->user)->withSession([ActiveLearningProfile::SESSION_KEY => $profile->id]);
+
+        $response = $this->get(route('learning.cards', [...$parameters, 'word_ids' => [$foreign->words->first()->id]]));
+        $response->assertOk()->assertViewIs('learning.cards')->assertSee('Змінити теми')->assertDontSee('secret');
+        $this->assertSame([$shared->id, $different->id], $response->viewData('words')->modelKeys());
+        $this->withSession([ActiveLearningProfile::SESSION_KEY => $other->id]);
+        $response = $this->get(route('learning.cards', $parameters));
+        $this->assertSame([$different->id], $response->viewData('words')->modelKeys());
+        $this->getJson(route('learning.cards', ['topic_ids' => [$system->id, $foreign->id]]))->assertUnprocessable();
+        $this->getJson(route('learning.cards'))->assertUnprocessable();
+        $this->assertSame($before, DB::table('word_progress')->get()->toJson());
+    }
+
+    public function test_cards_with_an_empty_collection_return_to_selection_with_an_explanation(): void
+    {
+        $profile = LearningProfile::factory()->create();
+        $topic = Topic::factory()->create();
+
+        $this->actingAs($profile->user)->withSession([ActiveLearningProfile::SESSION_KEY => $profile->id])
+            ->get(route('learning.cards', ['topic_ids' => [$topic->id]]))
+            ->assertOk()->assertViewIs('learning.index')->assertSee('У вибраних темах поки немає слів');
     }
 }

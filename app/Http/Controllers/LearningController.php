@@ -74,11 +74,17 @@ class LearningController extends Controller
             });
         }
 
-        return $this->selectionView(
-            $request, $profile, $selectedTopics,
-            $words->distinct()->orderBy('words.id')->get(['words.id', 'words.word_en', 'words.word_uk']),
-            $needsReview,
-        );
+        $cards = $words->distinct()->orderBy('words.id')->get(['words.id', 'words.word_en', 'words.word_uk']);
+
+        if ($request->routeIs('learning.cards') && $cards->isNotEmpty()) {
+            return view('learning.cards', [
+                'selectedTopics' => $selectedTopics,
+                'words' => $cards,
+                'needsReview' => $needsReview,
+            ]);
+        }
+
+        return $this->selectionView($request, $profile, $selectedTopics, $cards, $needsReview);
     }
 
     private function chooseProfile(): RedirectResponse

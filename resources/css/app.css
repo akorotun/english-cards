@@ -466,3 +466,15 @@ button:disabled { opacity: .65; cursor: wait; }
     .auth-shell { margin-top: 4rem; }
     .action-row { flex-direction: row; }
 }
+
+.learning-session { width: min(100%, 34rem); margin-inline: auto; }
+.learning-session h1 { margin: .5rem 0 1rem; }
+.learning-context { padding: .8rem 1rem; border-radius: 1rem; background: var(--surface-soft); overflow-wrap: anywhere; }
+.learning-counter { text-align: right; color: var(--muted); font-weight: 700; }
+.learning-card { display: grid; align-content: center; min-height: 20rem; padding: 2rem; border: 1px solid var(--border); border-radius: 2rem; background: var(--surface); box-shadow: var(--shadow); text-align: center; overflow-wrap: anywhere; touch-action: pan-y; }
+.learning-word, .learning-translation { margin: 0; font-size: clamp(1.8rem, 7vw, 3rem); font-weight: 800; }
+.learning-translation { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+.learning-controls { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.25rem; }
+.learning-controls > * { flex: 1 1 9rem; text-align: center; }
+.learning-controls button:disabled { opacity: .5; cursor: not-allowed; }
+.learning-complete { margin-top: 1.25rem; }

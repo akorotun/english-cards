@@ -193,3 +193,7 @@ document.querySelectorAll('[data-import-form]').forEach((form) => {
         }
     });
 });
+
+import { initializeLearningSession } from './learning-session';
+
+document.querySelectorAll('[data-learning-session]').forEach(initializeLearningSession);

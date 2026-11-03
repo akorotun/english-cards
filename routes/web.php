@@ -39,6 +39,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/home', HomeController::class)->name('home');
     Route::get('/learning', [LearningController::class, 'index'])->name('learning.index');
     Route::get('/learning/selection', [LearningController::class, 'selection'])->name('learning.selection');
+    Route::get('/learning/cards', [LearningController::class, 'selection'])->name('learning.cards');
     Route::get('/topics', [TopicController::class, 'index'])->name('topics.index');
     Route::get('/topics/{topic}', [TopicController::class, 'show'])->whereNumber('topic')->name('topics.show');
     Route::get('/vocabulary/import', [VocabularyImportController::class, 'index'])->name('vocabulary.import');
