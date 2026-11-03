@@ -436,6 +436,16 @@ button:disabled { opacity: .65; cursor: wait; }
 .pagination-disabled { opacity: .65; cursor: default; }
 .topic-import { margin: 1.5rem 0 0; }
 
+.learning-filters { display: grid; gap: 1rem; }
+.learning-filter-heading { display: flex; align-items: center; justify-content: space-between; gap: .75rem; font-weight: 700; }
+.learning-icon-button { display: inline-grid; place-items: center; width: 2.75rem; height: 2.75rem; padding: .65rem; border: 0; border-radius: .75rem; background: transparent; color: var(--primary); cursor: pointer; }
+.learning-icon-button:hover { background: var(--surface-soft); }
+.learning-icon-button svg { width: 1.25rem; height: 1.25rem; }
+.learning-topic-selection legend { width: 100%; }
+.learning-topic-heading { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.learning-filter-empty { margin: 0; }
+.learning-filters :focus-visible, .learning-topic-selection :focus-visible { outline-color: var(--primary); }
+
 .learning-option { display: flex; align-items: center; gap: .65rem; min-height: 3rem; overflow-wrap: anywhere; cursor: pointer; }
 .learning-option input { flex: none; width: 1.25rem; height: 1.25rem; margin: 0; accent-color: var(--primary); }
 .learning-option span { min-width: 0; }

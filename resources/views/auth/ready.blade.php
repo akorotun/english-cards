@@ -9,6 +9,7 @@
         <p class="intro">Оберіть теми й сформуйте підбірку для навчання.</p>
         <div class="action-row">
             <a class="button button-primary" href="{{ route('learning.index') }}">Вибрати теми</a>
+            <a class="button button-primary" href="{{ route('check.index') }}">Перевірка</a>
             <a class="button button-secondary" href="{{ route('profiles.index') }}">Перемкнути профіль</a>
             <a class="button button-secondary" href="{{ route('profiles.show', $profile) }}">Налаштування</a>
         </div>

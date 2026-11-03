@@ -51,6 +51,7 @@
                                 <a href="{{ route('profiles.index') }}" @if (request()->routeIs('profiles.*')) aria-current="page" @endif>Профілі</a>
                                 <a href="{{ route('topics.index') }}" @if (request()->routeIs('topics.*')) aria-current="page" @endif>Теми</a>
                                 <a href="{{ route('learning.index') }}" @if (request()->routeIs('learning.*')) aria-current="page" @endif>Навчання</a>
+                                <a href="{{ route('check.index') }}" @if (request()->routeIs('check.*')) aria-current="page" @endif>Перевірка</a>
                                 <a href="{{ route('vocabulary.import') }}" @if (request()->routeIs('vocabulary.import*')) aria-current="page" @endif>Імпорт слів</a>
                             </nav>
                         </details>
@@ -59,7 +60,7 @@
             </div>
         </header>
 
-        <main id="main" class="auth-shell @if (request()->routeIs('learning.*')) learning-shell @endif">
+        <main id="main" class="auth-shell @if (request()->routeIs('learning.*', 'check.*')) learning-shell @endif">
             <div class="notice" role="status" data-ui-feedback hidden></div>
             @if (session('status'))
                 <div class="notice" role="status">{{ session('status') }}</div>

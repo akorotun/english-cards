@@ -37,6 +37,9 @@ Route::middleware('auth')->group(function (): void {
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/home', HomeController::class)->name('home');
+    Route::get('/check', [LearningController::class, 'index'])->name('check.index');
+    Route::get('/check/selection', [LearningController::class, 'selection'])->name('check.selection');
+    Route::get('/check/start', [LearningController::class, 'selection'])->name('check.start');
     Route::get('/learning', [LearningController::class, 'index'])->name('learning.index');
     Route::get('/learning/selection', [LearningController::class, 'selection'])->name('learning.selection');
     Route::get('/learning/cards', [LearningController::class, 'selection'])->name('learning.cards');

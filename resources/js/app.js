@@ -212,3 +212,53 @@ document.querySelectorAll('[data-learning-selection]').forEach((form) => {
     topics.forEach((topic) => topic.addEventListener('change', updateLearnedFilter));
     updateLearnedFilter();
 });
+
+
+document.querySelectorAll('[data-learning-selection]').forEach((form) => {
+    const result = document.querySelector('[data-selection-result]');
+    const filters = form.querySelector('[data-topic-filters]');
+    const search = form.querySelector('[data-topic-search]');
+    const scope = form.querySelector('[data-topic-scope]');
+    const level = form.querySelector('[data-topic-level]');
+    const rows = [...form.querySelectorAll('[data-topic-row]')];
+    filters.hidden = false;
+
+    if (result && form.dataset.hasResult === '1') {
+        form.hidden = true;
+        result.querySelector('a[href="#topic-selection"]').addEventListener('click', (event) => {
+            event.preventDefault();
+            result.hidden = true;
+            form.hidden = false;
+            form.querySelector('#topic-selection').scrollIntoView();
+        });
+    }
+
+    function filterTopics() {
+        let visible = 0;
+        rows.forEach((row) => {
+            const matches = row.dataset.name.toLocaleLowerCase().includes(search.value.trim().toLocaleLowerCase())
+                && (!scope.querySelector('input:checked').value || row.dataset.scope === scope.querySelector('input:checked').value)
+                && (!level.querySelector('input:checked').value || row.dataset.level === level.querySelector('input:checked').value);
+            row.hidden = !matches;
+            if (matches) visible++;
+        });
+        form.querySelector('[data-filter-empty]').hidden = visible !== 0;
+    }
+
+    [search, scope, level].forEach((input) => input.addEventListener('input', filterTopics));
+    form.querySelector('[data-reset-filters]').addEventListener('click', () => {
+        search.value = '';
+        [scope, level].forEach((filter) => {
+            const first = filter.querySelector('input');
+            first.checked = true;
+            first.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        filterTopics();
+    });
+    form.querySelector('[data-clear-selection]').addEventListener('click', () => {
+        form.querySelectorAll('input[name="topic_ids[]"]').forEach((checkbox) => {
+            checkbox.checked = false;
+            checkbox.dispatchEvent(new Event('change'));
+        });
+    });
+});

@@ -49,7 +49,7 @@ class LearningController extends Controller
         ]);
 
         if ($validator->fails()) {
-            throw (new ValidationException($validator))->redirectTo(route('learning.index'));
+            throw (new ValidationException($validator))->redirectTo(route($request->routeIs('check.*') ? 'check.index' : 'learning.index'));
         }
 
         $validated = $validator->validated();
@@ -60,7 +60,7 @@ class LearningController extends Controller
         if ($selectedTopics->count() !== count($validated['topic_ids'])) {
             throw ValidationException::withMessages([
                 'topic_ids' => 'Одна або кілька тем недоступні. Оновіть вибір тем.',
-            ])->redirectTo(route('learning.index'));
+            ])->redirectTo(route($request->routeIs('check.*') ? 'check.index' : 'learning.index'));
         }
 
         $words = Word::query()->whereHas('topics', function (Builder $query) use ($request, $selectedTopics): void {
@@ -115,6 +115,8 @@ class LearningController extends Controller
             'selectedTopics' => $selectedTopics,
             'words' => $words,
             'needsReview' => $needsReview,
+            'isCheck' => $request->routeIs('check.*'),
+            'checkStarted' => $request->routeIs('check.start') && $words?->isNotEmpty(),
         ]);
     }
 }

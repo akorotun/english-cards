@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Навчання — English Cards')
+@section('title', ($isCheck ? 'Перевірка' : 'Навчання').' — English Cards')
 
 @section('content')
     @php
@@ -22,7 +22,7 @@
         @endif
 
         @if ($words !== null)
-            <div class="learning-selection-result" role="status">
+            <div class="learning-selection-result" role="status" data-selection-result>
                 @php
                     $wordCount = $words->count();
                     $wordLabel = match (true) {
@@ -35,8 +35,10 @@
                 @include('learning.partials.selected-topics', ['changeTopicsUrl' => '#topic-selection'])
                 @if ($words->isEmpty())
                     <p>{{ $needsReview ? 'За фільтром немає карток. Вимкніть «Не показувати вивчені слова» або змініть теми.' : 'У вибраних темах поки немає слів. Оберіть інші теми.' }}</p>
+                @elseif ($checkStarted)
+                    <p>Підбірку сформовано. Перевірка карток поки недоступна.</p>
                 @else
-                    <a class="button button-primary learning-selection-start" href="{{ route('learning.cards', ['topic_ids' => $selectedTopics->modelKeys(), 'needs_review' => (int) $needsReview]) }}">Почати навчання</a>
+                    <a class="button button-primary learning-selection-start" href="{{ route($isCheck ? 'check.start' : 'learning.cards', ['topic_ids' => $selectedTopics->modelKeys(), 'needs_review' => (int) $needsReview]) }}">{{ $isCheck ? 'Почати перевірку' : 'Почати навчання' }}</a>
                 @endif
             </div>
         @endif
@@ -45,9 +47,35 @@
             <p class="notice">Доступних тем поки немає. Ви можете додати власні теми через імпорт слів.</p>
             <a class="button button-secondary" href="{{ route('vocabulary.import') }}">Імпорт слів</a>
         @else
-            <form method="get" action="{{ route('learning.selection') }}" class="form-stack" data-learning-selection>
-                <fieldset class="field filter-field" id="topic-selection">
-                    <legend>Оберіть теми</legend>
+            <form method="get" action="{{ route($isCheck ? 'check.selection' : 'learning.selection') }}" class="form-stack" data-learning-selection data-has-result="{{ $words !== null ? '1' : '0' }}">
+                <div class="learning-filters" data-topic-filters hidden>
+                    <div class="learning-filter-heading">
+                        <span>Фільтри</span>
+                        <button type="button" class="learning-icon-button" data-reset-filters title="Скинути фільтри" aria-label="Скинути фільтри">
+                            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+                        </button>
+                    </div>
+                    <label class="field">Пошук тем <input type="search" data-topic-search></label>
+                    <div data-topic-scope>
+                        @include('topics.partials.filter', [
+                            'name' => 'topic_scope', 'label' => 'Тип теми',
+                            'options' => ['' => 'Усі', 'system' => 'Системні', 'own' => 'Мої'], 'selectedValue' => '',
+                        ])
+                    </div>
+                    <div data-topic-level>
+                        @include('topics.partials.filter', [
+                            'name' => 'topic_level', 'label' => 'Рівень',
+                            'options' => ['' => 'Усі'] + $topics->pluck('level')->unique()->sort()->mapWithKeys(fn ($level) => [$level => $level])->all(), 'selectedValue' => '',
+                        ])
+                    </div>
+                    <p class="hint learning-filter-empty" data-filter-empty hidden>За фільтрами тем не знайдено.</p>
+                </div>
+                <fieldset class="field filter-field learning-topic-selection" id="topic-selection">
+                    <legend><span class="learning-topic-heading">Оберіть теми
+                        <button type="button" class="learning-icon-button" data-clear-selection title="Очистити вибір" aria-label="Очистити вибір">
+                            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6m4-6v6M5 7l1 13h12l1-13M9 7V4h6v3"/></svg>
+                        </button>
+                    </span></legend>
                     <ul class="learning-topic-list">
                         @foreach ($topics as $topic)
                             @php
@@ -59,7 +87,7 @@
                                     default => 'слів',
                                 };
                             @endphp
-                            <li>
+                            <li data-topic-row data-name="{{ $topic->name }}" data-level="{{ $topic->level }}" data-scope="{{ $topic->user_id === null ? 'system' : 'own' }}">
                                 <label class="learning-topic-row">
                                     <input type="checkbox" name="topic_ids[]" value="{{ $topic->id }}" data-has-learned-words="{{ $topic->has_learned_words ? '1' : '0' }}" @checked(in_array($topic->id, $checkedTopicIds)) aria-labelledby="topic-{{ $topic->id }}-name" aria-describedby="topic-{{ $topic->id }}-meta">
                                     <span class="learning-topic-content">
