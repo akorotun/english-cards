@@ -1,3 +1,24 @@
+export function speakEnglish(text, browser, onError) {
+    if (!browser.speechSynthesis || typeof browser.SpeechSynthesisUtterance !== 'function') {
+        onError();
+        return;
+    }
+
+    try {
+        const utterance = new browser.SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        const voice = browser.speechSynthesis.getVoices().find((item) => /^en(?:-|$)/i.test(item.lang));
+        if (voice) utterance.voice = voice;
+        utterance.onerror = (event) => {
+            if (event.error !== 'canceled' && event.error !== 'interrupted') onError();
+        };
+        browser.speechSynthesis.cancel();
+        browser.speechSynthesis.speak(utterance);
+    } catch {
+        onError();
+    }
+}
+
 export function createLearningSession(cards, random = Math.random) {
     let order = [];
     let index = 0;
@@ -30,8 +51,11 @@ export function initializeLearningSession(root) {
     const previous = root.querySelector('[data-learning-previous]');
     const next = root.querySelector('[data-learning-next]');
     const card = root.querySelector('[data-learning-card]');
+    const audioFeedback = root.querySelector('[data-learning-audio-feedback]');
+    const clearAudioFeedback = () => { audioFeedback.hidden = true; };
 
     function render() {
+        clearAudioFeedback();
         const finished = session.completed();
         cardScreen.hidden = finished;
         complete.hidden = !finished;
@@ -46,6 +70,13 @@ export function initializeLearningSession(root) {
         next.textContent = session.position() === session.count() - 1 ? 'Завершити →' : 'Далі →';
     }
 
+    root.querySelector('[data-learning-speak]').addEventListener('click', () => {
+        clearAudioFeedback();
+        speakEnglish(session.current().word_en, window, () => {
+            audioFeedback.textContent = 'Не вдалося відтворити вимову. Ви можете продовжити перегляд карток.';
+            audioFeedback.hidden = false;
+        });
+    });
     previous.addEventListener('click', () => { session.previous(); render(); });
     next.addEventListener('click', () => { session.next(); render(); });
     root.querySelector('[data-learning-restart]').addEventListener('click', () => { session.restart(); render(); next.focus(); });

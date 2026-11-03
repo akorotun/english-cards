@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Вивчення — English Cards')
+@section('title', 'Навчання — English Cards')
 
 @section('content')
     @php
@@ -9,7 +9,7 @@
         $reviewChecked = in_array(old('needs_review', $needsReview), [true, 1, '1'], true);
     @endphp
     <section class="panel" aria-labelledby="page-title">
-        <h1 id="page-title">Вивчення</h1>
+        <h1 id="page-title">Навчання</h1>
         <p class="intro">Оберіть одну або кілька тем для профілю {{ $profile->name }}. Спільні картки потраплять до підбірки лише один раз.</p>
 
         @if ($errors->any())
@@ -36,7 +36,7 @@
                     <p>{{ $needsReview ? 'За фільтром немає карток. Вимкніть «Потрібно повторити» або змініть теми.' : 'У вибраних темах поки немає слів. Оберіть інші теми.' }}</p>
                 @else
                     <p>{{ $needsReview ? 'Фільтр: Потрібно повторити (рівні 0–2).' : 'Усі картки вибраних тем, незалежно від рівня знання.' }}</p>
-                    <a class="button button-primary" href="{{ route('learning.cards', ['topic_ids' => $selectedTopics->modelKeys(), 'needs_review' => (int) $needsReview]) }}">Почати вивчення</a>
+                    <a class="button button-primary" href="{{ route('learning.cards', ['topic_ids' => $selectedTopics->modelKeys(), 'needs_review' => (int) $needsReview]) }}">Почати навчання</a>
                 @endif
             </div>
         @endif
@@ -47,7 +47,7 @@
         @else
             <form method="get" action="{{ route('learning.selection') }}" class="form-stack">
                 <fieldset class="field filter-field" aria-describedby="topic-selection-hint">
-                    <legend>Теми для вивчення</legend>
+                    <legend>Теми для навчання</legend>
                     <p id="topic-selection-hint" class="hint">Позначте потрібні теми. Лічильник кожної теми показує всі її картки до застосування фільтра.</p>
                     <ul class="topic-list">
                         @foreach ($topics as $topic)

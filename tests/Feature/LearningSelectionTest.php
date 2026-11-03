@@ -67,7 +67,7 @@ class LearningSelectionTest extends TestCase
             $this->withSession([ActiveLearningProfile::SESSION_KEY => $profileId])
                 ->get(route($route, ['topic_ids' => [$topic->id], 'learning_profile_id' => $ownProfile->id]))
                 ->assertRedirect(route('profiles.index'))
-                ->assertSessionHas('status', 'Для вивчення виберіть доступний навчальний профіль.')
+                ->assertSessionHas('status', 'Для навчання виберіть доступний навчальний профіль.')
                 ->assertSessionMissing(ActiveLearningProfile::SESSION_KEY);
         }
     }
@@ -94,7 +94,7 @@ class LearningSelectionTest extends TestCase
             ->assertSee('name="topic_ids[]"', false)->assertSee('name="needs_review"', false)
             ->assertSee(route('learning.selection'))->assertSee('Сформувати підбірку')
             ->assertDontSee('Secret collection')->assertDontSee('SECRET')
-            ->assertDontSee('Почати вивчення')->assertDontSee('Пройти ще раз');
+            ->assertDontSee('Почати навчання')->assertDontSee('Пройти ще раз');
         $this->assertSame([$system->id, $own->id], $response->viewData('topics')->modelKeys());
         $this->assertSame([2, 0], $response->viewData('topics')->pluck('words_count')->all());
         $this->assertNull($response->viewData('words'));
@@ -117,7 +117,7 @@ class LearningSelectionTest extends TestCase
             ->get(route('learning.selection', ['topic_ids' => [$own->id, $system->id], 'word_ids' => [999]]));
 
         $response->assertOk()->assertSee('Підбірку сформовано')->assertSee('Унікальних карток: <strong>2</strong>', false)
-            ->assertSee('Усі картки вибраних тем')->assertSee('Почати вивчення');
+            ->assertSee('Усі картки вибраних тем')->assertSee('Почати навчання');
         $this->assertSame([$system->id, $own->id], $response->viewData('selectedTopics')->modelKeys());
         $this->assertSame([$shared->id, $different->id], $response->viewData('words')->modelKeys());
         $this->assertSame(['світло', 'легкий'], $response->viewData('words')->pluck('word_uk')->all());

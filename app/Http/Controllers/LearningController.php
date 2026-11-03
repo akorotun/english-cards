@@ -90,7 +90,7 @@ class LearningController extends Controller
     private function chooseProfile(): RedirectResponse
     {
         return redirect()->route('profiles.index')
-            ->with('status', 'Для вивчення виберіть доступний навчальний профіль.');
+            ->with('status', 'Для навчання виберіть доступний навчальний профіль.');
     }
 
     /**

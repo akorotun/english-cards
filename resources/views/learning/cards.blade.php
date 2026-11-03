@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'Вивчення — English Cards')
+@section('title', 'Навчання — English Cards')
 
 @section('content')
     @php
         $selectionUrl = route('learning.selection', ['topic_ids' => $selectedTopics->modelKeys(), 'needs_review' => (int) $needsReview]);
     @endphp
     <section class="learning-session" data-learning-session data-cards="{{ json_encode($words->map->only(['word_en', 'word_uk'])->values(), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) }}" aria-labelledby="learning-title">
-        <h1 id="learning-title">Вивчення</h1>
+        <h1 id="learning-title">Навчання</h1>
         <div class="learning-context">
             <strong>Вибрані теми:</strong>
             @foreach ($selectedTopics as $topic)
@@ -22,6 +22,8 @@
                 <div class="learning-card" data-learning-card>
                     <p class="learning-word" lang="en" data-learning-en></p>
                     <p class="learning-translation" lang="uk" data-learning-uk></p>
+                    <button class="button button-secondary learning-speak" type="button" data-learning-speak aria-label="Послухати англійське слово">🔊 Послухати</button>
+                    <p class="learning-audio-feedback" role="status" data-learning-audio-feedback hidden></p>
                 </div>
                 <div class="learning-controls">
                     <button class="button button-secondary" type="button" data-learning-previous>← Назад</button>
