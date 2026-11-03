@@ -6,5 +6,5 @@
                 @endforeach
             </ul>
             @if ($needsReview)<p>Не показувати вивчені слова</p>@endif
-            <a href="{{ $changeTopicsUrl }}">Змінити теми</a>
+            @if ($changeTopicsUrl)<a href="{{ $changeTopicsUrl }}">Змінити теми</a>@endif
         </details>

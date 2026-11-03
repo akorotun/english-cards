@@ -262,3 +262,6 @@ document.querySelectorAll('[data-learning-selection]').forEach((form) => {
         });
     });
 });
+
+import { initializeCheckSession } from './check-session';
+document.querySelectorAll('[data-check-session]').forEach(initializeCheckSession);

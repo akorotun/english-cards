@@ -48,6 +48,7 @@
                                 </svg>
                             </summary>
                             <nav aria-label="Основна навігація" class="header-dropdown site-nav">
+                                @if (request()->routeIs('check.start'))<a href="{{ route('check.index') }}" data-check-exit>Завершити перевірку</a>@endif
                                 <a href="{{ route('profiles.index') }}" @if (request()->routeIs('profiles.*')) aria-current="page" @endif>Профілі</a>
                                 <a href="{{ route('topics.index') }}" @if (request()->routeIs('topics.*')) aria-current="page" @endif>Теми</a>
                                 <a href="{{ route('learning.index') }}" @if (request()->routeIs('learning.*')) aria-current="page" @endif>Навчання</a>
