@@ -153,7 +153,7 @@ class LearningSelectionTest extends TestCase
         $explicitAll = $this->get(route('learning.selection', [...$parameters, 'needs_review' => 0]))->assertOk();
         $this->assertSame($words->modelKeys(), $explicitAll->viewData('words')->modelKeys());
         $reviewParameters = [...$parameters, 'needs_review' => 1, 'learning_profile_id' => $foreignProfile->id];
-        $review = $this->get(route('learning.selection', $reviewParameters))->assertOk()->assertSee('рівні 0–2');
+        $review = $this->get(route('learning.selection', $reviewParameters))->assertOk()->assertSee('Фільтр: Не показувати вивчені слова');
         $this->assertSame([$words[0]->id, $words[1]->id, $words[2]->id, $words[4]->id], $review->viewData('words')->modelKeys());
 
         $this->post(route('profiles.activate', $otherProfile))->assertRedirect(route('home'));
@@ -217,7 +217,7 @@ class LearningSelectionTest extends TestCase
     {
         $topicsMessage = 'Оберіть теми зі списку доступних.';
         $idsMessage = 'Оберіть різні теми зі списку доступних.';
-        $reviewMessage = 'Оберіть коректне значення фільтра «Потрібно повторити».';
+        $reviewMessage = 'Оберіть коректне значення фільтра «Не показувати вивчені слова».';
 
         return [
             'empty topics' => [['topic_ids' => []], 'topic_ids', 'Оберіть хоча б одну доступну тему.'],
@@ -266,7 +266,7 @@ class LearningSelectionTest extends TestCase
         $topic = Topic::factory()->hasAttached($word)->create();
         WordProgress::factory()->for($profile)->for($word)->create(['knowledge_level' => 3]);
         $review = $this->get(route('learning.selection', ['topic_ids' => [$topic->id], 'needs_review' => 1]));
-        $review->assertOk()->assertSee('За фільтром немає карток. Вимкніть «Потрібно повторити» або змініть теми.');
+        $review->assertOk()->assertSee('За фільтром немає карток. Вимкніть «Не показувати вивчені слова» або змініть теми.');
         $this->assertCount(0, $review->viewData('words'));
     }
 
@@ -281,7 +281,7 @@ class LearningSelectionTest extends TestCase
         $response->assertOk()->assertSee($profile->name)->assertDontSee($profile->name, false)
             ->assertSee($topic->name)->assertDontSee($topic->name, false)
             ->assertSee($topic->level)->assertDontSee($topic->level, false);
-        $this->assertMatchesRegularExpression('/value="'.$topic->id.'"\s+checked/', $response->getContent());
+        $this->assertMatchesRegularExpression('/value="'.$topic->id.'"[^>]*\schecked/', $response->getContent());
         $this->assertMatchesRegularExpression('/name="needs_review" value="1"\s+checked/', $response->getContent());
     }
 
@@ -318,5 +318,25 @@ class LearningSelectionTest extends TestCase
         $this->actingAs($profile->user)->withSession([ActiveLearningProfile::SESSION_KEY => $profile->id])
             ->get(route('learning.cards', ['topic_ids' => [$topic->id]]))
             ->assertOk()->assertViewIs('learning.index')->assertSee('У вибраних темах поки немає слів');
+    }
+
+    public function test_learned_filter_availability_depends_on_the_active_profile_and_visible_topics(): void
+    {
+        $profile = LearningProfile::factory()->create();
+        $other = LearningProfile::factory()->for($profile->user)->create();
+        $word = Word::factory()->create();
+        $topic = Topic::factory()->hasAttached($word)->create();
+        $otherTopic = Topic::factory()->hasAttached(Word::factory())->create();
+        WordProgress::factory()->for($profile)->for($word)->create(['knowledge_level' => 3]);
+        $this->actingAs($profile->user)->withSession([ActiveLearningProfile::SESSION_KEY => $profile->id]);
+
+        $response = $this->get(route('learning.selection', ['topic_ids' => [$topic->id]]));
+        $response->assertOk()->assertSee('data-has-learned-words="1"', false)->assertSee('Не показувати вивчені слова');
+        $this->assertTrue((bool) $response->viewData('topics')->firstWhere('id', $topic->id)->has_learned_words);
+        $this->assertFalse((bool) $response->viewData('topics')->firstWhere('id', $otherTopic->id)->has_learned_words);
+        $this->withSession([ActiveLearningProfile::SESSION_KEY => $other->id]);
+        $response = $this->get(route('learning.selection', ['topic_ids' => [$topic->id]]));
+        $this->assertFalse((bool) $response->viewData('topics')->firstWhere('id', $topic->id)->has_learned_words);
+        $response->assertSee('data-learned-filter  hidden', false);
     }
 }

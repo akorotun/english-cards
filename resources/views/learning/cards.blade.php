@@ -13,7 +13,7 @@
             @foreach ($selectedTopics as $topic)
                 <span>{{ $topic->name }} · {{ $topic->level }} · {{ $topic->user_id === null ? 'Системна' : 'Приватна' }}{{ ! $loop->last ? ';' : '' }}</span>
             @endforeach
-            @if ($needsReview)<span> · Потрібно повторити</span>@endif
+            @if ($needsReview)<span> · Не показувати вивчені слова</span>@endif
         </div>
         <noscript><p class="notice">Для перегляду карток увімкніть JavaScript.</p></noscript>
         <div data-learning-content hidden>

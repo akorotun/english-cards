@@ -197,3 +197,19 @@ document.querySelectorAll('[data-import-form]').forEach((form) => {
 import { initializeLearningSession } from './learning-session';
 
 document.querySelectorAll('[data-learning-session]').forEach(initializeLearningSession);
+
+
+document.querySelectorAll('[data-learning-selection]').forEach((form) => {
+    const filter = form.querySelector('[data-learned-filter]');
+    const checkbox = filter.querySelector('input[type="checkbox"]');
+    const topics = [...form.querySelectorAll('input[name="topic_ids[]"]')];
+
+    function updateLearnedFilter() {
+        const available = topics.some((topic) => topic.checked && topic.dataset.hasLearnedWords === '1');
+        filter.hidden = !available;
+        if (!available) checkbox.checked = false;
+    }
+
+    topics.forEach((topic) => topic.addEventListener('change', updateLearnedFilter));
+    updateLearnedFilter();
+});

@@ -22,7 +22,7 @@
             <a class="brand" href="/" aria-label="English Cards — головна">English <span>Cards</span></a>
             <div class="header-actions">
                 @auth
-                    @if (auth()->user()->hasVerifiedEmail() && ! request()->routeIs('learning.cards'))
+                    @if (auth()->user()->hasVerifiedEmail())
                         <details class="profile-menu" data-header-menu data-dropdown @if (! $layoutActiveProfile) hidden @endif>
                             <summary class="profile-trigger" data-active-profile-trigger aria-label="Активний профіль: {{ $layoutProfileName }}" title="Активний профіль: {{ $layoutProfileName }}">
                                 <span class="profile-avatar" data-active-profile-initial>{{ $layoutProfileInitial }}</span>
@@ -36,7 +36,7 @@
                         </details>
                     @endif
                 @endauth
-                @if ($layoutActiveProfile && ! request()->routeIs('profiles.show', 'learning.cards'))
+                @if ($layoutActiveProfile && ! request()->routeIs('profiles.show'))
                     @include('profiles.partials.theme-menu', ['themeProfile' => $layoutActiveProfile])
                 @endif
                 @auth

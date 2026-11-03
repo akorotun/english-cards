@@ -10,7 +10,6 @@
     @endphp
     <section class="panel" aria-labelledby="page-title">
         <h1 id="page-title">Навчання</h1>
-        <p class="intro">Оберіть одну або кілька тем для профілю {{ $profile->name }}. Спільні картки потраплять до підбірки лише один раз.</p>
 
         @if ($errors->any())
             <div class="notice import-error" role="alert">
@@ -33,9 +32,9 @@
                     @endforeach
                 </ul>
                 @if ($words->isEmpty())
-                    <p>{{ $needsReview ? 'За фільтром немає карток. Вимкніть «Потрібно повторити» або змініть теми.' : 'У вибраних темах поки немає слів. Оберіть інші теми.' }}</p>
+                    <p>{{ $needsReview ? 'За фільтром немає карток. Вимкніть «Не показувати вивчені слова» або змініть теми.' : 'У вибраних темах поки немає слів. Оберіть інші теми.' }}</p>
                 @else
-                    <p>{{ $needsReview ? 'Фільтр: Потрібно повторити (рівні 0–2).' : 'Усі картки вибраних тем, незалежно від рівня знання.' }}</p>
+                    <p>{{ $needsReview ? 'Фільтр: Не показувати вивчені слова.' : 'Усі картки вибраних тем, незалежно від рівня знання.' }}</p>
                     <a class="button button-primary" href="{{ route('learning.cards', ['topic_ids' => $selectedTopics->modelKeys(), 'needs_review' => (int) $needsReview]) }}">Почати навчання</a>
                 @endif
             </div>
@@ -45,30 +44,30 @@
             <p class="notice">Доступних тем поки немає. Ви можете додати власні теми через імпорт слів.</p>
             <a class="button button-secondary" href="{{ route('vocabulary.import') }}">Імпорт слів</a>
         @else
-            <form method="get" action="{{ route('learning.selection') }}" class="form-stack">
-                <fieldset class="field filter-field" aria-describedby="topic-selection-hint">
-                    <legend>Теми для навчання</legend>
-                    <p id="topic-selection-hint" class="hint">Позначте потрібні теми. Лічильник кожної теми показує всі її картки до застосування фільтра.</p>
+            <form method="get" action="{{ route('learning.selection') }}" class="form-stack" data-learning-selection>
+                <fieldset class="field filter-field">
+                    <legend>Оберіть теми</legend>
                     <ul class="topic-list">
                         @foreach ($topics as $topic)
                             <li class="topic-item">
                                 @include('topics.partials.details')
                                 <label class="learning-option">
-                                    <input type="checkbox" name="topic_ids[]" value="{{ $topic->id }}" @checked(in_array($topic->id, $checkedTopicIds)) aria-labelledby="choose-topic-{{ $topic->id }} topic-{{ $topic->id }}-name">
+                                    <input type="checkbox" name="topic_ids[]" value="{{ $topic->id }}" data-has-learned-words="{{ $topic->has_learned_words ? '1' : '0' }}" @checked(in_array($topic->id, $checkedTopicIds)) aria-labelledby="choose-topic-{{ $topic->id }} topic-{{ $topic->id }}-name">
                                     <span id="choose-topic-{{ $topic->id }}">Обрати тему</span>
                                 </label>
                             </li>
                         @endforeach
                     </ul>
                 </fieldset>
-                <div>
+                <div data-learned-filter @if (! $topics->contains(fn ($topic) => $topic->has_learned_words && in_array($topic->id, $checkedTopicIds))) hidden @endif>
                     <input type="hidden" name="needs_review" value="0">
                     <label class="learning-option">
                         <input type="checkbox" name="needs_review" value="1" @checked($reviewChecked) aria-describedby="needs-review-hint">
-                        <span>Потрібно повторити</span>
+                        <span>Не показувати вивчені слова</span>
                     </label>
-                    <p id="needs-review-hint" class="hint">Лише картки з рівнем знання 0–2, включно з новими. Прогрес не змінюється.</p>
+                    <p id="needs-review-hint" class="hint">Приховати слова з рівнем знання 3 для цього профілю.</p>
                 </div>
+                <noscript><p class="hint">Щоб змінити фільтр, спочатку сформуйте підбірку з вибраних тем.</p></noscript>
                 <button class="button button-primary" type="submit">Сформувати підбірку</button>
             </form>
         @endif

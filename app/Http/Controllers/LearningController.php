@@ -45,7 +45,7 @@ class LearningController extends Controller
             'topic_ids.required' => 'Оберіть хоча б одну доступну тему.',
             'topic_ids.*' => 'Оберіть теми зі списку доступних.',
             'topic_ids.*.*' => 'Оберіть різні теми зі списку доступних.',
-            'needs_review.*' => 'Оберіть коректне значення фільтра «Потрібно повторити».',
+            'needs_review.*' => 'Оберіть коректне значення фільтра «Не показувати вивчені слова».',
         ]);
 
         if ($validator->fails()) {
@@ -106,7 +106,12 @@ class LearningController extends Controller
     ): View {
         return view('learning.index', [
             'profile' => $profile,
-            'topics' => Topic::query()->visibleTo($request->user())->withCount('words')->orderBy('topics.id')->get(),
+            'topics' => Topic::query()->visibleTo($request->user())->withCount('words')
+                ->withExists(['words as has_learned_words' => function (Builder $query) use ($profile): void {
+                    $query->whereHas('progress', function (Builder $query) use ($profile): void {
+                        $query->where('learning_profile_id', $profile->id)->where('knowledge_level', 3);
+                    });
+                }])->orderBy('topics.id')->get(),
             'selectedTopics' => $selectedTopics,
             'words' => $words,
             'needsReview' => $needsReview,
