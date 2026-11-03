@@ -62,7 +62,12 @@ class VocabularyBrowsingJourneyTest extends TestCase
             $before[$table] = DB::table($table)->get()->toJson();
         }
 
-        $list = $this->get(route('topics.index'))->assertOk()->assertSee('data-theme="'.$theme.'"', false)
+        $defaultList = $this->get(route('topics.index'))->assertOk()->assertSee('data-theme="'.$theme.'"', false)
+            ->assertDontSee('Foreign secret')->assertDontSee('SECRET');
+        $this->assertSame(['scope' => 'system', 'level' => 'A1-A2'], $defaultList->viewData('filters'));
+        $this->assertSame(0, $defaultList->viewData('topics')->total());
+
+        $list = $this->get(route('topics.index', ['scope' => 'all', 'level' => '']))->assertOk()
             ->assertDontSee('Foreign secret')->assertDontSee('SECRET');
         $this->assertSame(23, $list->viewData('topics')->total());
 
