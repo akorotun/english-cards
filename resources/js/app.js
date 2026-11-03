@@ -74,7 +74,6 @@ document.querySelectorAll('[data-theme-form]').forEach((form) => {
             const result = await submitJson(form);
             applyTheme(result.theme_preference);
             form.closest('[data-theme-menu]').open = false;
-            showFeedback('Тему оформлення оновлено.');
         } catch {
             showFeedback('Не вдалося змінити тему. Спробуйте ще раз.');
         }

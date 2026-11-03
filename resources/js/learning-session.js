@@ -66,6 +66,7 @@ export function initializeLearningSession(root) {
         root.querySelector('[data-learning-en]').textContent = session.current().word_en;
         root.querySelector('[data-learning-uk]').textContent = session.current().word_uk;
         root.querySelector('[data-learning-counter]').textContent = `${session.position() + 1} / ${session.count()}`;
+        root.querySelector('[data-learning-progress]').value = session.position() + 1;
         previous.disabled = session.position() === 0;
         next.textContent = session.position() === session.count() - 1 ? 'Завершити →' : 'Далі →';
     }

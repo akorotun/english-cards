@@ -59,7 +59,7 @@
             </div>
         </header>
 
-        <main id="main" class="auth-shell">
+        <main id="main" class="auth-shell @if (request()->routeIs('learning.*')) learning-shell @endif">
             <div class="notice" role="status" data-ui-feedback hidden></div>
             @if (session('status'))
                 <div class="notice" role="status">{{ session('status') }}</div>

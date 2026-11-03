@@ -116,8 +116,7 @@ class LearningSelectionTest extends TestCase
         $response = $this->actingAs($profile->user)->withSession([ActiveLearningProfile::SESSION_KEY => $profile->id])
             ->get(route('learning.selection', ['topic_ids' => [$own->id, $system->id], 'word_ids' => [999]]));
 
-        $response->assertOk()->assertSee('Підбірку сформовано')->assertSee('Унікальних карток: <strong>2</strong>', false)
-            ->assertSee('Усі картки вибраних тем')->assertSee('Почати навчання');
+        $response->assertOk()->assertSee('2 слова')->assertSee('Обрані теми (2)')->assertSee('Почати навчання');
         $this->assertSame([$system->id, $own->id], $response->viewData('selectedTopics')->modelKeys());
         $this->assertSame([$shared->id, $different->id], $response->viewData('words')->modelKeys());
         $this->assertSame(['світло', 'легкий'], $response->viewData('words')->pluck('word_uk')->all());
@@ -153,7 +152,7 @@ class LearningSelectionTest extends TestCase
         $explicitAll = $this->get(route('learning.selection', [...$parameters, 'needs_review' => 0]))->assertOk();
         $this->assertSame($words->modelKeys(), $explicitAll->viewData('words')->modelKeys());
         $reviewParameters = [...$parameters, 'needs_review' => 1, 'learning_profile_id' => $foreignProfile->id];
-        $review = $this->get(route('learning.selection', $reviewParameters))->assertOk()->assertSee('Фільтр: Не показувати вивчені слова');
+        $review = $this->get(route('learning.selection', $reviewParameters))->assertOk()->assertSee('Не показувати вивчені слова');
         $this->assertSame([$words[0]->id, $words[1]->id, $words[2]->id, $words[4]->id], $review->viewData('words')->modelKeys());
 
         $this->post(route('profiles.activate', $otherProfile))->assertRedirect(route('home'));

@@ -8,8 +8,8 @@
         $checkedTopicIds = is_array($checkedTopicIds) ? $checkedTopicIds : [];
         $reviewChecked = in_array(old('needs_review', $needsReview), [true, 1, '1'], true);
     @endphp
-    <section class="panel" aria-labelledby="page-title">
-        <h1 id="page-title">Навчання</h1>
+    @include('learning.partials.title')
+    <section class="panel" aria-labelledby="learning-title">
 
         @if ($errors->any())
             <div class="notice import-error" role="alert">
@@ -22,20 +22,21 @@
         @endif
 
         @if ($words !== null)
-            <div class="notice" role="status">
-                <h2>Підбірку сформовано</h2>
-                <p>Унікальних карток: <strong>{{ $words->count() }}</strong></p>
-                <p>Вибрані теми:</p>
-                <ul>
-                    @foreach ($selectedTopics as $selectedTopic)
-                        <li>{{ $selectedTopic->name }} · {{ $selectedTopic->level }} · {{ $selectedTopic->user_id === null ? 'Системна' : 'Приватна' }}</li>
-                    @endforeach
-                </ul>
+            <div class="learning-selection-result" role="status">
+                @php
+                    $wordCount = $words->count();
+                    $wordLabel = match (true) {
+                        $wordCount % 100 >= 11 && $wordCount % 100 <= 14 => 'слів',
+                        $wordCount % 10 === 1 => 'слово',
+                        $wordCount % 10 >= 2 && $wordCount % 10 <= 4 => 'слова',
+                        default => 'слів',
+                    };
+                @endphp
+                @include('learning.partials.selected-topics', ['changeTopicsUrl' => '#topic-selection'])
                 @if ($words->isEmpty())
                     <p>{{ $needsReview ? 'За фільтром немає карток. Вимкніть «Не показувати вивчені слова» або змініть теми.' : 'У вибраних темах поки немає слів. Оберіть інші теми.' }}</p>
                 @else
-                    <p>{{ $needsReview ? 'Фільтр: Не показувати вивчені слова.' : 'Усі картки вибраних тем, незалежно від рівня знання.' }}</p>
-                    <a class="button button-primary" href="{{ route('learning.cards', ['topic_ids' => $selectedTopics->modelKeys(), 'needs_review' => (int) $needsReview]) }}">Почати навчання</a>
+                    <a class="button button-primary learning-selection-start" href="{{ route('learning.cards', ['topic_ids' => $selectedTopics->modelKeys(), 'needs_review' => (int) $needsReview]) }}">Почати навчання</a>
                 @endif
             </div>
         @endif
@@ -45,7 +46,7 @@
             <a class="button button-secondary" href="{{ route('vocabulary.import') }}">Імпорт слів</a>
         @else
             <form method="get" action="{{ route('learning.selection') }}" class="form-stack" data-learning-selection>
-                <fieldset class="field filter-field">
+                <fieldset class="field filter-field" id="topic-selection">
                     <legend>Оберіть теми</legend>
                     <ul class="topic-list">
                         @foreach ($topics as $topic)

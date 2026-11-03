@@ -7,18 +7,15 @@
         $selectionUrl = route('learning.selection', ['topic_ids' => $selectedTopics->modelKeys(), 'needs_review' => (int) $needsReview]);
     @endphp
     <section class="learning-session" data-learning-session data-cards="{{ json_encode($words->map->only(['word_en', 'word_uk'])->values(), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) }}" aria-labelledby="learning-title">
-        <h1 id="learning-title">Навчання</h1>
-        <div class="learning-context">
-            <strong>Вибрані теми:</strong>
-            @foreach ($selectedTopics as $topic)
-                <span>{{ $topic->name }} · {{ $topic->level }} · {{ $topic->user_id === null ? 'Системна' : 'Приватна' }}{{ ! $loop->last ? ';' : '' }}</span>
-            @endforeach
-            @if ($needsReview)<span> · Не показувати вивчені слова</span>@endif
-        </div>
+        @include('learning.partials.title')
+        @include('learning.partials.selected-topics', ['changeTopicsUrl' => $selectionUrl])
         <noscript><p class="notice">Для перегляду карток увімкніть JavaScript.</p></noscript>
         <div data-learning-content hidden>
             <div data-learning-card-screen>
-                <p class="learning-counter" aria-live="polite" data-learning-counter></p>
+                <div class="learning-position">
+                    <progress class="learning-position-bar" data-learning-progress max="{{ $words->count() }}" value="1" aria-label="Позиція в підбірці"></progress>
+                    <p class="learning-counter" aria-live="polite" data-learning-counter></p>
+                </div>
                 <div class="learning-card" data-learning-card>
                     <p class="learning-word" lang="en" data-learning-en></p>
                     <p class="learning-translation" lang="uk" data-learning-uk></p>
@@ -39,6 +36,5 @@
                 </div>
             </div>
         </div>
-        <p><a href="{{ $selectionUrl }}">Змінити теми</a></p>
     </section>
 @endsection
