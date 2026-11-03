@@ -14,16 +14,18 @@ class TopicController extends Controller
         $validated = $request->validate([
             'scope' => ['nullable', 'string', Rule::in(['all', 'system', 'private'])],
             'level' => ['nullable', 'string', 'max:20'],
+            'search' => ['nullable', 'string', 'max:200'],
             'page' => ['nullable', 'integer', 'min:1'],
         ], [
             'scope.*' => 'Оберіть коректний тип тем.',
             'level.*' => 'Рівень має бути текстом до 20 символів.',
+            'search.*' => 'Пошук має бути текстом до 200 символів.',
             'page.*' => 'Номер сторінки має бути додатним цілим числом.',
         ]);
 
         $filters = [
-            'scope' => $validated['scope'] ?? 'all',
-            'level' => $validated['level'] ?? '',
+            'scope' => $validated['scope'] ?? 'system',
+            'level' => $request->query->has('level') ? ($validated['level'] ?? '') : 'A1-A2',
         ];
         $availableTopics = Topic::query()->visibleTo($request->user());
         $levels = (clone $availableTopics)->distinct()->orderBy('level')->pluck('level');
@@ -39,10 +41,19 @@ class TopicController extends Controller
             $topics->where('topics.level', $filters['level']);
         }
 
+        $search = $validated['search'] ?? '';
+        if ($search !== '') {
+            $literal = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $search);
+            $topics->whereRaw("topics.name LIKE ? ESCAPE '!'", ['%'.$literal.'%']);
+        }
+        $listFilters = $filters + ($search !== '' ? ['search' => $search] : []);
+
         return view('topics.index', [
-            'topics' => $topics->orderBy('topics.id')->paginate(20)->appends($filters),
+            'topics' => $topics->orderBy('topics.id')->paginate(20)->appends($listFilters),
             'levels' => $levels,
             'filters' => $filters,
+            'search' => $search,
+            'listFilters' => $listFilters,
         ]);
     }
 
@@ -52,11 +63,13 @@ class TopicController extends Controller
         $validated = $request->validate([
             'scope' => ['nullable', 'string', Rule::in(['all', 'system', 'private'])],
             'level' => ['nullable', 'string', 'max:20'],
+            'search' => ['nullable', 'string', 'max:200'],
             'topics_page' => ['nullable', 'integer', 'min:1'],
             'page' => ['nullable', 'integer', 'min:1'],
         ], [
             'scope.*' => 'Оберіть коректний тип тем.',
             'level.*' => 'Рівень має бути текстом до 20 символів.',
+            'search.*' => 'Пошук має бути текстом до 200 символів.',
             'topics_page.*' => 'Номер сторінки тем має бути додатним цілим числом.',
             'page.*' => 'Номер сторінки має бути додатним цілим числом.',
         ]);
@@ -67,6 +80,10 @@ class TopicController extends Controller
             'topics_page' => (int) ($validated['topics_page'] ?? 1),
         ];
 
+        if (($validated['search'] ?? '') !== '') {
+            $listContext['search'] = $validated['search'];
+        }
+
         return view('topics.show', [
             'topic' => $visibleTopic,
             'words' => $visibleTopic->words()->orderBy('words.word_en')->orderBy('words.id')
@@ -75,6 +92,7 @@ class TopicController extends Controller
                 'scope' => $listContext['scope'],
                 'level' => $listContext['level'],
                 'page' => $listContext['topics_page'],
+                ...isset($listContext['search']) ? ['search' => $listContext['search']] : [],
             ]),
         ]);
     }

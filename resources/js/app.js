@@ -273,3 +273,70 @@ document.querySelectorAll('[data-learning-selection]').forEach((form) => {
 
 import { initializeCheckSession } from './check-session';
 document.querySelectorAll('[data-check-session]').forEach(initializeCheckSession);
+
+
+document.querySelectorAll('[data-topic-browse-filters]').forEach((form) => {
+    const search = form.querySelector('[data-browse-search]');
+    const clear = form.querySelector('[data-browse-clear]');
+    const error = form.querySelector('[data-browse-error]');
+    const results = document.querySelector('[data-topic-browse-results]');
+    let timer;
+    let activeRequest;
+    let generation = 0;
+    let restoring = false;
+
+    function cancelPending() {
+        clearTimeout(timer);
+        activeRequest?.abort();
+        generation++;
+    }
+
+    async function updateResults(updateUrl = true) {
+        const current = ++generation;
+        activeRequest = new AbortController();
+        const url = new URL(form.action);
+        url.search = new URLSearchParams(new FormData(form)).toString();
+        error.hidden = true;
+        results.setAttribute('aria-busy', 'true');
+        try {
+            const response = await fetch(url, { signal: activeRequest.signal, headers: { 'Accept': 'text/html' } });
+            if (!response.ok || new URL(response.url).pathname !== url.pathname) throw new Error('Request failed');
+            const parsed = new DOMParser().parseFromString(await response.text(), 'text/html');
+            const updated = parsed.querySelector('[data-topic-browse-results]');
+            if (!updated) throw new Error('Missing results');
+            if (current !== generation) return;
+            results.innerHTML = updated.innerHTML;
+            if (updateUrl) history.replaceState(null, '', url);
+        } catch (exception) {
+            if (exception.name !== 'AbortError' && current === generation) error.hidden = false;
+        } finally {
+            if (current === generation) results.removeAttribute('aria-busy');
+        }
+    }
+
+    function schedule(delay = 0) {
+        cancelPending();
+        clear.hidden = search.value.length === 0;
+        timer = setTimeout(() => updateResults(), delay);
+    }
+
+    search.addEventListener('input', () => schedule(300));
+    clear.addEventListener('click', () => { search.value = ''; schedule(); search.focus(); });
+    form.addEventListener('change', (event) => {
+        if (!restoring && event.target.matches('input[type="radio"]')) schedule();
+    });
+    form.addEventListener('submit', (event) => { event.preventDefault(); schedule(); });
+    form.querySelector('[data-browse-retry]').addEventListener('click', () => schedule());
+    form.querySelector('[data-browse-reset]').addEventListener('click', () => {
+        search.value = '';
+        restoring = true;
+        for (const [name, value] of [['scope', 'system'], ['level', 'A1-A2']]) {
+            const input = [...form.querySelectorAll(`input[name="${name}"]`)].find((option) => option.value === value);
+            input.checked = true;
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        restoring = false;
+        schedule();
+    });
+    window.addEventListener('popstate', () => window.location.reload());
+});

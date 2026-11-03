@@ -44,7 +44,7 @@ class TopicBrowsingTest extends TestCase
         $own = Topic::factory()->for($user)->create(['name' => 'Beta', 'level' => 'A1-A2']);
         $foreign = Topic::factory()->for(User::factory())->create(['name' => 'Secret topic', 'level' => 'SECRET']);
         $foreign->words()->attach(Word::factory()->create(['word_en' => 'hidden', 'word_uk' => 'прихований']));
-        $response = $this->actingAs($user)->get(route('topics.index'));
+        $response = $this->actingAs($user)->get(route('topics.index', ['scope' => 'all', 'level' => '']));
 
         $response->assertOk()->assertViewIs('topics.index')
             ->assertSee('Alpha')->assertSee('Beta')->assertSee('Системна')->assertSee('Приватна')
@@ -63,7 +63,7 @@ class TopicBrowsingTest extends TestCase
         $system = Topic::factory()->create(['name' => 'Alpha']);
         $own = Topic::factory()->for($admin)->create(['name' => 'Beta']);
         Topic::factory()->for(User::factory())->create(['name' => 'Foreign secret', 'level' => 'C2']);
-        $response = $this->actingAs($admin)->get(route('topics.index'));
+        $response = $this->actingAs($admin)->get(route('topics.index', ['scope' => 'all', 'level' => '']));
 
         $response->assertOk()->assertDontSee('Foreign secret')->assertDontSee('C2');
         $this->assertSame([$system->id, $own->id], $response->viewData('topics')->modelKeys());
@@ -75,12 +75,12 @@ class TopicBrowsingTest extends TestCase
         $system = Topic::factory()->create(['name' => 'Alpha']);
         $own = Topic::factory()->for($user)->create(['name' => 'Beta']);
         $this->actingAs($user);
-        $this->assertSame([$system->id, $own->id], $this->get(route('topics.index'))->assertOk()->viewData('topics')->modelKeys());
+        $this->assertSame([$system->id, $own->id], $this->get(route('topics.index', ['scope' => 'all', 'level' => '']))->assertOk()->viewData('topics')->modelKeys());
         $profiles = LearningProfile::factory()->count(2)->for($user)->create();
         $foreignProfile = LearningProfile::factory()->create();
 
         foreach ([$profiles[0]->id, $profiles[1]->id, $foreignProfile->id, 999999] as $profileId) {
-            $response = $this->withSession([ActiveLearningProfile::SESSION_KEY => $profileId])->get(route('topics.index'));
+            $response = $this->withSession([ActiveLearningProfile::SESSION_KEY => $profileId])->get(route('topics.index', ['scope' => 'all', 'level' => '']));
             $response->assertOk();
             $this->assertSame([$system->id, $own->id], $response->viewData('topics')->modelKeys());
         }
@@ -96,7 +96,7 @@ class TopicBrowsingTest extends TestCase
         $first->words()->attach([$shared->id, Word::factory()->create()->id]);
         $second->words()->attach($shared);
         Word::factory()->create();
-        $response = $this->actingAs($user)->get(route('topics.index'));
+        $response = $this->actingAs($user)->get(route('topics.index', ['scope' => 'all', 'level' => '']));
 
         $response->assertOk()->assertSee('0 слів')->assertSee('1 слово')->assertSee('2 слова');
         $this->assertSame([$first->id => 2, $second->id => 1, $empty->id => 0], $response->viewData('topics')->pluck('words_count', 'id')->all());
@@ -147,6 +147,46 @@ class TopicBrowsingTest extends TestCase
             'private and level' => ['private', 'A1', ['Gamma']],
             'unknown level' => ['all', 'UNKNOWN', []],
         ];
+    }
+
+    public function test_defaults_and_explicit_all_filters_are_distinct(): void
+    {
+        $user = User::factory()->create();
+        $default = Topic::factory()->create(['name' => 'System default', 'level' => 'A1-A2']);
+        $otherLevel = Topic::factory()->create(['name' => 'Other level', 'level' => 'B1']);
+        $own = Topic::factory()->for($user)->create(['name' => 'Own topic', 'level' => 'A1-A2']);
+        $this->actingAs($user);
+
+        $response = $this->get(route('topics.index'))->assertOk();
+        $this->assertSame(['scope' => 'system', 'level' => 'A1-A2'], $response->viewData('filters'));
+        $this->assertSame([$default->id], $response->viewData('topics')->modelKeys());
+        $all = $this->get(route('topics.index', ['scope' => 'all', 'level' => '']))->assertOk();
+        $this->assertSame([$default->id, $otherLevel->id, $own->id], $all->viewData('topics')->modelKeys());
+    }
+
+    public function test_search_combines_with_access_filters_and_survives_navigation(): void
+    {
+        $user = User::factory()->create();
+        $foreign = User::factory()->create();
+        $matches = Topic::factory()->count(21)->for($user)->create(['name' => 'Travel 100% Guide', 'level' => 'B1']);
+        Topic::factory()->for($user)->create(['name' => 'Travel 1000 Guide', 'level' => 'B1']);
+        Topic::factory()->for($user)->create(['name' => 'Travel 100% Other', 'level' => 'A1']);
+        Topic::factory()->for($foreign)->create(['name' => 'Travel 100% Secret', 'level' => 'B1']);
+        $this->actingAs($user);
+        $parameters = ['scope' => 'private', 'level' => 'B1', 'search' => '100%'];
+        $response = $this->get(route('topics.index', $parameters))->assertOk()->assertDontSee('Secret');
+        $this->assertSame(21, $response->viewData('topics')->total());
+        $this->assertSame($matches->take(20)->modelKeys(), $response->viewData('topics')->modelKeys());
+        parse_str(parse_url($response->viewData('topics')->nextPageUrl(), PHP_URL_QUERY), $next);
+        $this->assertEquals([...$parameters, 'page' => '2'], $next);
+        $pageTwo = $this->get($response->viewData('topics')->nextPageUrl())->assertOk();
+        $this->assertSame([$matches->last()->id], $pageTwo->viewData('topics')->modelKeys());
+        $detailUrl = route('topics.show', ['topic' => $matches->last()->id, ...$parameters, 'topics_page' => 2]);
+        $pageTwo->assertSee($detailUrl);
+        $detail = $this->get($detailUrl)->assertOk();
+        parse_str(parse_url($detail->viewData('backUrl'), PHP_URL_QUERY), $backParameters);
+        $this->assertEquals([...$parameters, 'page' => '2'], $backParameters);
+        $this->getJson(route('topics.index', ['search' => ['bad']]))->assertUnprocessable()->assertJsonValidationErrors('search');
     }
 
     public function test_pagination_keeps_filters_and_drops_untrusted_query_parameters(): void
