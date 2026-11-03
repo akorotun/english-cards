@@ -218,6 +218,7 @@ document.querySelectorAll('[data-learning-selection]').forEach((form) => {
     const result = document.querySelector('[data-selection-result]');
     const filters = form.querySelector('[data-topic-filters]');
     const search = form.querySelector('[data-topic-search]');
+    const clearSearch = form.querySelector('[data-clear-search]');
     const scope = form.querySelector('[data-topic-scope]');
     const level = form.querySelector('[data-topic-level]');
     const rows = [...form.querySelectorAll('[data-topic-row]')];
@@ -234,6 +235,7 @@ document.querySelectorAll('[data-learning-selection]').forEach((form) => {
     }
 
     function filterTopics() {
+        clearSearch.hidden = search.value.length === 0;
         let visible = 0;
         rows.forEach((row) => {
             const matches = row.dataset.name.toLocaleLowerCase().includes(search.value.trim().toLocaleLowerCase())
@@ -246,6 +248,12 @@ document.querySelectorAll('[data-learning-selection]').forEach((form) => {
     }
 
     [search, scope, level].forEach((input) => input.addEventListener('input', filterTopics));
+    filterTopics();
+    clearSearch.addEventListener('click', () => {
+        search.value = '';
+        filterTopics();
+        search.focus();
+    });
     form.querySelector('[data-reset-filters]').addEventListener('click', () => {
         search.value = '';
         [scope, level].forEach((filter) => {

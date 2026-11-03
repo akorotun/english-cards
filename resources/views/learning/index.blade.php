@@ -55,17 +55,22 @@
                             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
                         </button>
                     </div>
-                    <label class="field">Пошук тем <input type="search" data-topic-search></label>
+                    <div class="learning-search">
+                        <label class="filter-visually-hidden" for="learning-topic-search">Пошук тем</label>
+                        <svg class="learning-search-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+                        <input id="learning-topic-search" type="search" placeholder="Пошук тем..." data-topic-search>
+                        <button class="learning-search-clear" type="button" data-clear-search aria-label="Очистити пошук" title="Очистити пошук" hidden>×</button>
+                    </div>
                     <div data-topic-scope>
                         @include('topics.partials.filter', [
                             'name' => 'topic_scope', 'label' => 'Тип теми',
-                            'options' => ['' => 'Усі', 'system' => 'Системні', 'own' => 'Мої'], 'selectedValue' => '',
+                            'options' => ['' => 'Усі', 'system' => 'Системні', 'own' => 'Власні'], 'selectedValue' => '', 'compactPrefix' => 'Тип',
                         ])
                     </div>
                     <div data-topic-level>
                         @include('topics.partials.filter', [
                             'name' => 'topic_level', 'label' => 'Рівень',
-                            'options' => ['' => 'Усі'] + $topics->pluck('level')->unique()->sort()->mapWithKeys(fn ($level) => [$level => $level])->all(), 'selectedValue' => '',
+                            'options' => ['' => 'Усі'] + $topics->pluck('level')->unique()->sort()->mapWithKeys(fn ($level) => [$level => $level])->all(), 'selectedValue' => '', 'compactPrefix' => 'Рівень',
                         ])
                     </div>
                     <p class="hint learning-filter-empty" data-filter-empty hidden>За фільтрами тем не знайдено.</p>
