@@ -439,6 +439,14 @@ button:disabled { opacity: .65; cursor: wait; }
 .learning-option { display: flex; align-items: center; gap: .65rem; min-height: 3rem; overflow-wrap: anywhere; cursor: pointer; }
 .learning-option input { flex: none; width: 1.25rem; height: 1.25rem; margin: 0; accent-color: var(--primary); }
 .learning-option span { min-width: 0; }
+.learning-topic-list { margin: 0; padding: 0; border: 1px solid var(--border); border-radius: .75rem; list-style: none; overflow: hidden; }
+.learning-topic-list li + li { border-top: 1px solid var(--border); }
+.learning-topic-row { display: flex; align-items: center; gap: .75rem; min-height: 4.5rem; padding: .75rem 1rem; background: var(--surface); cursor: pointer; }
+.learning-topic-row:has(input:checked) { background: var(--surface-soft); }
+.learning-topic-row input { flex: none; width: 1.25rem; height: 1.25rem; margin: 0; accent-color: var(--primary); }
+.learning-topic-content { display: grid; min-width: 0; gap: .1rem; overflow-wrap: anywhere; }
+.learning-topic-name { font-size: 1rem; line-height: 1.35; }
+.learning-topic-meta { color: var(--muted); font-size: .85rem; font-weight: 400; line-height: 1.4; }
 
 .topic-back { display: inline-block; min-height: 2.75rem; margin-bottom: 1rem; padding-block: .5rem; }
 .topic-detail h1, .topic-detail .topic-meta { overflow-wrap: anywhere; }

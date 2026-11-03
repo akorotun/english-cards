@@ -48,13 +48,24 @@
             <form method="get" action="{{ route('learning.selection') }}" class="form-stack" data-learning-selection>
                 <fieldset class="field filter-field" id="topic-selection">
                     <legend>Оберіть теми</legend>
-                    <ul class="topic-list">
+                    <ul class="learning-topic-list">
                         @foreach ($topics as $topic)
-                            <li class="topic-item">
-                                @include('topics.partials.details')
-                                <label class="learning-option">
-                                    <input type="checkbox" name="topic_ids[]" value="{{ $topic->id }}" data-has-learned-words="{{ $topic->has_learned_words ? '1' : '0' }}" @checked(in_array($topic->id, $checkedTopicIds)) aria-labelledby="choose-topic-{{ $topic->id }} topic-{{ $topic->id }}-name">
-                                    <span id="choose-topic-{{ $topic->id }}">Обрати тему</span>
+                            @php
+                                $topicWordCount = $topic->words_count;
+                                $topicWordLabel = match (true) {
+                                    $topicWordCount % 100 >= 11 && $topicWordCount % 100 <= 14 => 'слів',
+                                    $topicWordCount % 10 === 1 => 'слово',
+                                    $topicWordCount % 10 >= 2 && $topicWordCount % 10 <= 4 => 'слова',
+                                    default => 'слів',
+                                };
+                            @endphp
+                            <li>
+                                <label class="learning-topic-row">
+                                    <input type="checkbox" name="topic_ids[]" value="{{ $topic->id }}" data-has-learned-words="{{ $topic->has_learned_words ? '1' : '0' }}" @checked(in_array($topic->id, $checkedTopicIds)) aria-labelledby="topic-{{ $topic->id }}-name" aria-describedby="topic-{{ $topic->id }}-meta">
+                                    <span class="learning-topic-content">
+                                        <span class="learning-topic-name" id="topic-{{ $topic->id }}-name">{{ $topic->name }}</span>
+                                        <span class="learning-topic-meta" id="topic-{{ $topic->id }}-meta">{{ $topic->level }} · {{ $topic->user_id === null ? 'Системна' : 'Приватна' }} · {{ $topicWordCount }} {{ $topicWordLabel }}</span>
+                                    </span>
                                 </label>
                             </li>
                         @endforeach
