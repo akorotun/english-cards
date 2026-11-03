@@ -13,7 +13,8 @@ These project rules take precedence over generic command examples in the generat
 - The source code is on the WSL2 Ubuntu filesystem. The development runtime is Docker Desktop with Docker Compose, without Laravel Sail.
 - Run PHP, Composer, Artisan, PHPUnit, and Pint from the repository root through the `app` service. Examples: `docker compose exec -T app php artisan migrate`, `docker compose exec -T app php artisan test`, `docker compose exec -T app composer show --direct`, `docker compose exec -T app vendor/bin/phpunit`, and `docker compose exec -T app vendor/bin/pint --dirty`.
 - Run MySQL commands through the existing `db` service. Keep database tests on a separate MySQL test database; never run destructive reset commands on the development database.
-- Check `compose.yaml` before running npm. It currently defines `app`, `nginx`, and `db`, with no Node.js service; the `app` image does not install Node.js. Do not run npm in WSL2 or assume it works in `app`. If a task needs npm, agree on a Docker Compose Node.js service before running it there.
+- Check `compose.yaml` before running npm. The existing `node` service runs Node.js and npm; the `app` image does not install Node.js. Run frontend commands through Docker Compose, for example `docker compose exec -T node npm run build`, not in WSL2.
+- For browser UI checks, see [Chromium and CDP in the Docker handbook](../../docs/handbook/docker-compose.md#11-браузерна-перевірка-english-cards-через-chromium-і-cdp). Use its isolated-data and temporary-container precautions.
 
 ## Staged tasks
 
