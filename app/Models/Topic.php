@@ -5,6 +5,8 @@ namespace App\Models;
 use App\TextKeyNormalizer;
 use Database\Factories\TopicFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -25,6 +27,15 @@ class Topic extends Model
     public function words(): BelongsToMany
     {
         return $this->belongsToMany(Word::class);
+    }
+
+    /** @param Builder<Topic> $query */
+    #[Scope]
+    protected function visibleTo(Builder $query, User $user): void
+    {
+        $query->where(function (Builder $query) use ($user): void {
+            $query->whereNull('topics.user_id')->orWhere('topics.user_id', $user->id);
+        });
     }
 
     protected static function booted(): void

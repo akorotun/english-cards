@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LearningProfileController;
+use App\Http\Controllers\TopicController;
 use App\Http\Controllers\VocabularyImportController;
 use Illuminate\Support\Facades\Route;
 
@@ -35,6 +36,7 @@ Route::middleware('auth')->group(function (): void {
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/home', HomeController::class)->name('home');
+    Route::get('/topics', [TopicController::class, 'index'])->name('topics.index');
     Route::get('/vocabulary/import', [VocabularyImportController::class, 'index'])->name('vocabulary.import');
     Route::post('/vocabulary/import/preview', [VocabularyImportController::class, 'preview'])->name('vocabulary.import.preview');
     Route::post('/vocabulary/import/confirm', [VocabularyImportController::class, 'confirm'])->name('vocabulary.import.confirm');

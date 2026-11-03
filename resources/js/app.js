@@ -146,6 +146,43 @@ document.querySelectorAll('[data-dropdown]').forEach((menu) => {
     });
 });
 
+document.querySelectorAll('[data-filter-menu]').forEach((menu) => {
+    const trigger = menu.querySelector('summary');
+
+    menu.addEventListener('focusout', (event) => {
+        if (!menu.contains(event.relatedTarget)) {
+            menu.open = false;
+        }
+    });
+
+    menu.addEventListener('change', (event) => {
+        const input = event.target;
+
+        if (input instanceof HTMLInputElement && input.checked) {
+            menu.querySelector('[data-filter-value]').textContent = input.closest('label').querySelector('span').textContent;
+        }
+    });
+
+    menu.addEventListener('click', (event) => {
+        if (event.target instanceof HTMLInputElement && event.detail > 0) {
+            menu.open = false;
+            trigger.focus();
+        }
+    });
+
+    menu.addEventListener('keydown', (event) => {
+        if (event.target === trigger && ['ArrowDown', 'ArrowUp'].includes(event.key)) {
+            event.preventDefault();
+            menu.open = true;
+            menu.querySelector('input:checked')?.focus();
+        } else if (event.target instanceof HTMLInputElement && event.key === 'Enter') {
+            event.preventDefault();
+            menu.open = false;
+            trigger.focus();
+        }
+    });
+});
+
 document.querySelectorAll('[data-import-form]').forEach((form) => {
     form.addEventListener('submit', () => {
         const button = form.querySelector('button[type="submit"]');

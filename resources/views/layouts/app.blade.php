@@ -49,6 +49,7 @@
                             </summary>
                             <nav aria-label="Основна навігація" class="header-dropdown site-nav">
                                 <a href="{{ route('profiles.index') }}" @if (request()->routeIs('profiles.*')) aria-current="page" @endif>Профілі</a>
+                                <a href="{{ route('topics.index') }}" @if (request()->routeIs('topics.*')) aria-current="page" @endif>Теми</a>
                                 <a href="{{ route('vocabulary.import') }}" @if (request()->routeIs('vocabulary.import*')) aria-current="page" @endif>Імпорт слів</a>
                             </nav>
                         </details>
