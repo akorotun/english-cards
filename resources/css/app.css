@@ -464,6 +464,11 @@ button:disabled { opacity: .65; cursor: wait; }
 .learning-topic-content { display: grid; min-width: 0; gap: .1rem; overflow-wrap: anywhere; }
 .learning-topic-name { font-size: 1rem; line-height: 1.35; }
 .learning-topic-meta { color: var(--muted); font-size: .85rem; font-weight: 400; line-height: 1.4; }
+.topic-browse-row { justify-content: space-between; color: var(--text); text-decoration: none; }
+.topic-browse-row .learning-topic-name { font-weight: 650; }
+.topic-browse-row:hover, .topic-browse-row:focus-visible { background: var(--surface-soft); }
+.topic-browse-row:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+.topic-browse-row svg { flex: none; width: 1.25rem; height: 1.25rem; color: var(--primary); }
 
 .topic-back { display: inline-block; min-height: 2.75rem; margin-bottom: 1rem; padding-block: .5rem; }
 .topic-detail h1, .topic-detail .topic-meta { overflow-wrap: anywhere; }

@@ -3,9 +3,11 @@
 @section('title', 'Теми — English Cards')
 
 @section('content')
+    <h1 class="learning-header-title" id="page-title">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6v14M8 6v14M4 6h4M4 20h4M11 4v16M15 4v16M11 4h4M11 20h4M17 6l3-1 3 14-3 1z"/></svg>
+        Теми
+    </h1>
     <section class="panel" aria-labelledby="page-title">
-        <h1 id="page-title">Теми</h1>
-        <p class="intro">Системні теми та ваші приватні добірки слів. Оберіть тип і рівень, щоб знайти потрібну тему.</p>
 
         <form method="get" action="{{ route('topics.index') }}" class="learning-filters topic-filters" data-topic-browse-filters>
             <div class="learning-filter-heading">
@@ -46,11 +48,25 @@
                     @endif
                 </p>
             @else
-                <ul class="topic-list">
+                <ul class="learning-topic-list topic-browse-list">
                     @foreach ($topics as $topic)
-                        <li class="topic-item">
-                            @include('topics.partials.details')
-                            <a class="button button-secondary" href="{{ route('topics.show', ['topic' => $topic->id, ...$listFilters, 'topics_page' => $topics->currentPage()]) }}" aria-label="Переглянути тему {{ $topic->name }}">Переглянути</a>
+                        @php
+                            $wordCount = $topic->words_count;
+                            $wordLabel = match (true) {
+                                $wordCount % 100 >= 11 && $wordCount % 100 <= 14 => 'слів',
+                                $wordCount % 10 === 1 => 'слово',
+                                $wordCount % 10 >= 2 && $wordCount % 10 <= 4 => 'слова',
+                                default => 'слів',
+                            };
+                        @endphp
+                        <li>
+                            <a class="learning-topic-row topic-browse-row" href="{{ route('topics.show', ['topic' => $topic->id, ...$listFilters, 'topics_page' => $topics->currentPage()]) }}" aria-label="Переглянути тему {{ $topic->name }}">
+                                <span class="learning-topic-content">
+                                    <span class="learning-topic-name">{{ $topic->name }}</span>
+                                    <span class="learning-topic-meta">{{ $topic->level }} · {{ $topic->user_id === null ? 'Системна' : 'Приватна' }} · {{ $wordCount }} {{ $wordLabel }}</span>
+                                </span>
+                                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                            </a>
                         </li>
                     @endforeach
                 </ul>
