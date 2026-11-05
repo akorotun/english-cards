@@ -176,6 +176,12 @@ a:hover { text-decoration-thickness: 2px; }
 .header-dropdown a { display: block; min-height: 2.75rem; padding: .6rem .75rem; border-radius: .6rem; color: var(--text); text-decoration: none; font-weight: 700; }
 .header-dropdown a:hover, .header-dropdown a[aria-current='page'] { background: var(--surface-soft); }
 
+.site-nav a, .site-nav-logout button { display: flex; align-items: center; gap: .625rem; }
+.site-nav a svg, .site-nav-logout svg { flex: none; width: 1.2rem; height: 1.2rem; }
+.site-nav-logout { margin-top: .5rem; padding-top: .5rem; border-top: 1px solid var(--border); }
+.site-nav-logout button { width: 100%; min-height: 2.75rem; padding: .6rem .75rem; border: 0; border-radius: .6rem; background: transparent; color: var(--text); font-weight: 700; text-align: left; cursor: pointer; }
+.site-nav-logout button:hover { background: var(--surface-soft); }
+
 .theme-menu { position: relative; flex: none; }
 
 .theme-trigger {
@@ -347,11 +353,13 @@ input[aria-invalid='true'] { border-color: var(--danger); }
 
 .profile-create { margin-top: 1.5rem; }
 
+.profile-create .form-stack { margin-top: 1.25rem; }
+
 .profile-list { display: grid; gap: .75rem; margin: 0; padding: 0; list-style: none; }
 
 .profile-item { padding: 1rem; border: 1px solid var(--border); border-radius: .75rem; background: var(--surface-soft); }
 
-.profile-current { display: block; color: var(--muted); font-size: .9rem; }
+.profile-current { display: flex; flex: 1 1 auto; align-items: center; justify-content: center; min-height: 3rem; color: var(--muted); font-size: .9rem; }
 
 .profile-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }
 

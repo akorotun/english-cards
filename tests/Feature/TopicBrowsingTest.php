@@ -49,7 +49,7 @@ class TopicBrowsingTest extends TestCase
         $response->assertOk()->assertViewIs('topics.index')
             ->assertSee('Alpha')->assertSee('Beta')->assertSee('Системна')->assertSee('Приватна')
             ->assertDontSee('Secret topic')->assertDontSee('SECRET')->assertDontSee('прихований')
-            ->assertSeeInOrder(['href="'.route('topics.index').'"', 'aria-current="page"', '>Теми</a>'], false)
+            ->assertSeeInOrder(['href="'.route('topics.index').'"', 'aria-current="page"', 'Теми</a>'], false)
             ->assertSee(route('vocabulary.import'), false);
         $this->assertSame([$system->id, $own->id], $response->viewData('topics')->modelKeys());
         $this->assertSame(['A1-A2', 'B1'], $response->viewData('levels')->all());

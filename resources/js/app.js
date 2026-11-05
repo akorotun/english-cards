@@ -100,7 +100,9 @@ document.querySelectorAll('[data-profile-activate]').forEach((form) => {
                 profileTrigger.title = `Активний профіль: ${result.profile_name}`;
             }
             document.querySelectorAll('[data-profile-item]').forEach((item) => {
-                item.querySelector('[data-profile-current]').hidden = item.dataset.profileItem !== String(result.profile_id);
+                const isActive = item.dataset.profileItem === String(result.profile_id);
+                item.querySelector('[data-profile-current]').hidden = !isActive;
+                item.querySelector('[data-profile-select]').hidden = isActive;
             });
             document.querySelectorAll('[data-theme-form]').forEach((themeForm) => {
                 themeForm.action = result.theme_url;

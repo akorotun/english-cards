@@ -95,6 +95,22 @@ class AuthenticationTest extends TestCase
         $this->assertNotSame($oldToken, session()->token());
     }
 
+    public function test_navigation_menu_contains_the_logout_form(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $this->get(route('profiles.index'))->assertOk()
+            ->assertSeeInOrder([
+                'aria-label="Основна навігація"',
+                '<form method="post" action="'.route('logout').'"',
+                'name="_token"',
+                'Вийти</button>',
+                '</nav>',
+            ], false)
+            ->assertDontSee('Вийти з акаунта');
+    }
+
     public function test_invalid_login_has_a_generic_error_and_is_throttled(): void
     {
         $user = User::factory()->create();

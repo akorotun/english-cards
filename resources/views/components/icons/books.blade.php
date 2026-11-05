@@ -1,0 +1,1 @@
+<svg {{ $attributes }} aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6v14M8 6v14M4 6h4M4 20h4M11 4v16M15 4v16M11 4h4M11 20h4M17 6l3-1 3 14-3 1z"/></svg>

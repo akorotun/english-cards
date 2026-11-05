@@ -48,11 +48,15 @@
                                 </svg>
                             </summary>
                             <nav aria-label="Основна навігація" class="header-dropdown site-nav">
-                                <a href="{{ route('profiles.index') }}" @if (request()->routeIs('profiles.*')) aria-current="page" @endif>Профілі</a>
-                                <a href="{{ route('topics.index') }}" @if (request()->routeIs('topics.*')) aria-current="page" @endif>Теми</a>
-                                <a href="{{ route('learning.index') }}" @if (request()->routeIs('learning.*')) aria-current="page" @endif>Навчання</a>
-                                <a href="{{ route('check.index') }}" @if (request()->routeIs('check.*')) aria-current="page" @endif>Перевірка</a>
-                                <a href="{{ route('vocabulary.import') }}" @if (request()->routeIs('vocabulary.import*')) aria-current="page" @endif>Імпорт слів</a>
+                                <a href="{{ route('profiles.index') }}" @if (request()->routeIs('profiles.*')) aria-current="page" @endif><x-icons.users /> Профілі</a>
+                                <a href="{{ route('topics.index') }}" @if (request()->routeIs('topics.*')) aria-current="page" @endif><x-icons.books /> Теми</a>
+                                <a href="{{ route('learning.index') }}" @if (request()->routeIs('learning.*')) aria-current="page" @endif><x-icons.book-open /> Навчання</a>
+                                <a href="{{ route('check.index') }}" @if (request()->routeIs('check.*')) aria-current="page" @endif><x-icons.check-circle /> Перевірка</a>
+                                <a href="{{ route('vocabulary.import') }}" @if (request()->routeIs('vocabulary.import*')) aria-current="page" @endif><x-icons.file-import /> Імпорт слів</a>
+                                <form method="post" action="{{ route('logout') }}" class="site-nav-logout">
+                                    @csrf
+                                    <button type="submit"><x-icons.log-out /> Вийти</button>
+                                </form>
                             </nav>
                         </details>
                     @endif
@@ -60,7 +64,7 @@
             </div>
         </header>
 
-        <main id="main" class="auth-shell @if (request()->routeIs('learning.*', 'check.*', 'topics.index')) learning-shell @endif">
+        <main id="main" class="auth-shell @if (request()->routeIs('learning.*', 'check.*', 'topics.index', 'profiles.index', 'vocabulary.import')) learning-shell @endif">
             <div class="notice" role="status" data-ui-feedback hidden></div>
             @if (session('status'))
                 <div class="notice" role="status">{{ session('status') }}</div>

@@ -3,10 +3,12 @@
 @section('title', 'Імпорт слів — English Cards')
 
 @section('content')
+    <h1 class="learning-header-title" id="page-title">
+        <x-icons.file-import />
+        Імпорт слів
+    </h1>
     <section class="panel" aria-labelledby="page-title">
-        <p class="eyebrow">Словник</p>
-        <h1 id="page-title">Імпорт слів</h1>
-        <p class="intro">Завантажте CSV, перевірте результат і лише потім підтвердіть імпорт.</p>
+{{--        <p class="intro">Завантажте CSV, перевірте результат і лише потім підтвердіть імпорт.</p>--}}
 
         @if (session('import_error'))
             <p class="notice import-error" role="alert">{{ session('import_error') }}</p>
@@ -27,7 +29,15 @@
             <div class="field">
                 <label for="import-file">CSV-файл</label>
                 <input id="import-file" type="file" name="file" accept=".csv,text/csv" required aria-describedby="import-rules" aria-invalid="{{ $errors->has('file') ? 'true' : 'false' }}">
-                <p id="import-rules" class="hint">UTF-8, кома як роздільник, до 1 МіБ і 2 000 рядків даних. Обов'язкові колонки: <code>word_en</code>, <code>word_uk</code>, <code>level</code>, <code>topic</code>. Колонка <code>lesson</code> допускається, але ігнорується.</p>
+                <div id="import-rules" class="hint">
+                    <p>UTF-8, кома як роздільник, до 1 МіБ і 2 000 рядків даних. Обов'язкові колонки:</p>
+                    <ul>
+                        <li><code>• word_en</code> — слова англійською</li>
+                        <li><code>• word_uk</code> — переклад українською</li>
+                        <li><code>• level</code> — рівень для теми (А1-А2, B1, B2, ...)</li>
+                        <li><code>• topic</code> — назва Теми групи слів</li>
+                    </ul>
+                </div>
             </div>
 
             @if ($isAdmin)

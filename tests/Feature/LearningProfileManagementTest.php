@@ -197,6 +197,45 @@ class LearningProfileManagementTest extends TestCase
             ->assertDontSee('aria-label="Активний профіль: Перший профіль"', false);
     }
 
+    public function test_profile_selection_controls_follow_the_active_profile(): void
+    {
+        $user = User::factory()->create();
+        $first = LearningProfile::factory()->for($user)->create();
+        $this->actingAs($user);
+
+        $assertControls = function (LearningProfile $profile, bool $isActive, string $html): void {
+            $document = new \DOMDocument;
+            @$document->loadHTML($html);
+            $xpath = new \DOMXPath($document);
+            $item = $xpath->query('//*[@data-profile-item="'.$profile->id.'"]')->item(0);
+            $this->assertNotNull($item);
+            $indicator = $xpath->query('.//*[@data-profile-current]', $item)->item(0);
+            $button = $xpath->query('.//*[@data-profile-select]', $item)->item(0);
+            $this->assertNotNull($indicator);
+            $this->assertNotNull($button);
+            $this->assertSame(! $isActive, $indicator->hasAttribute('hidden'));
+            $this->assertSame($isActive, $button->hasAttribute('hidden'));
+            $this->assertSame(1, $xpath->query('.//a[contains(@href, "/profiles/")]', $item)->length);
+        };
+
+        $html = $this->get(route('profiles.index'))->assertOk()->getContent();
+        $assertControls($first, false, $html);
+
+        $this->withSession([ActiveLearningProfile::SESSION_KEY => $first->id]);
+        $html = $this->get(route('profiles.index'))->assertOk()->getContent();
+        $assertControls($first, true, $html);
+
+        $second = LearningProfile::factory()->for($user)->create();
+        $html = $this->get(route('profiles.index'))->assertOk()->getContent();
+        $assertControls($first, true, $html);
+        $assertControls($second, false, $html);
+
+        $this->postJson(route('profiles.activate', $second))->assertOk();
+        $html = $this->get(route('profiles.index'))->assertOk()->getContent();
+        $assertControls($first, false, $html);
+        $assertControls($second, true, $html);
+    }
+
     public function test_active_profile_theme_can_be_changed_without_changing_other_profiles(): void
     {
         $user = User::factory()->create();
