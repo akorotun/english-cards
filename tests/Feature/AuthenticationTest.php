@@ -89,11 +89,44 @@ class AuthenticationTest extends TestCase
 
         $this->withSession(['active_learning_profile_id' => 123]);
         $oldToken = session()->token();
-        $this->post(route('logout'))->assertRedirect(route('login'));
+        $this->post(route('logout'))->assertRedirect('/');
 
         $this->assertGuest();
         $this->assertFalse(session()->has('active_learning_profile_id'));
         $this->assertNotSame($oldToken, session()->token());
+    }
+
+    public function test_authenticated_users_are_redirected_from_guest_pages_to_home(): void
+    {
+        foreach ([User::factory()->create(), User::factory()->unverified()->create()] as $user) {
+            $this->actingAs($user)->get(route('login'))->assertRedirect(route('home'));
+            $this->get(route('register'))->assertRedirect(route('home'));
+        }
+    }
+
+    public function test_login_returns_to_the_requested_protected_page(): void
+    {
+        $user = User::factory()->create(['password' => 'SecurePassword123!']);
+
+        $this->get(route('topics.index'))->assertRedirect(route('login'));
+        $this->post(route('login'), [
+            'email' => $user->email,
+            'password' => 'SecurePassword123!',
+        ])->assertRedirect(route('topics.index'));
+        $this->get(route('topics.index'))->assertOk();
+    }
+
+    public function test_unverified_user_must_verify_email_after_login_to_a_protected_page(): void
+    {
+        $user = User::factory()->unverified()->create(['password' => 'SecurePassword123!']);
+
+        $this->get(route('topics.index'))->assertRedirect(route('login'));
+        $this->post(route('login'), [
+            'email' => $user->email,
+            'password' => 'SecurePassword123!',
+        ])->assertRedirect(route('topics.index'));
+        $this->get(route('topics.index'))->assertRedirect(route('verification.notice'));
+        $this->get(route('home'))->assertRedirect(route('verification.notice'));
     }
 
     public function test_navigation_menu_contains_the_logout_form(): void

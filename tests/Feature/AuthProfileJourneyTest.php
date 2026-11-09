@@ -59,7 +59,7 @@ class AuthProfileJourneyTest extends TestCase
         $this->post(route('profiles.activate', $secondProfile))->assertRedirect(route('home'));
         $this->get(route('home'))->assertOk()->assertSee('Дитина');
         $this->assertSame($secondProfile->id, session(ActiveLearningProfile::SESSION_KEY));
-        $this->post(route('logout'))->assertRedirect(route('login'));
+        $this->post(route('logout'))->assertRedirect('/');
         $this->assertGuest();
         $this->assertFalse(session()->has(ActiveLearningProfile::SESSION_KEY));
 
