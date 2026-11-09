@@ -48,6 +48,7 @@
                                 </svg>
                             </summary>
                             <nav aria-label="Основна навігація" class="header-dropdown site-nav">
+                                <a href="{{ route('home') }}" @if (request()->routeIs('home')) aria-current="page" @endif><x-icons.layout-dashboard /> Мій кабінет</a>
                                 <a href="{{ route('profiles.index') }}" @if (request()->routeIs('profiles.*')) aria-current="page" @endif><x-icons.users /> Профілі</a>
                                 <a href="{{ route('topics.index') }}" @if (request()->routeIs('topics.*')) aria-current="page" @endif><x-icons.books /> Теми</a>
                                 <a href="{{ route('learning.index') }}" @if (request()->routeIs('learning.*')) aria-current="page" @endif><x-icons.book-open /> Навчання</a>

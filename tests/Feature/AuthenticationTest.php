@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\LearningProfile;
 use App\Models\User;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -109,6 +110,29 @@ class AuthenticationTest extends TestCase
                 '</nav>',
             ], false)
             ->assertDontSee('Вийти з акаунта');
+    }
+
+    public function test_navigation_links_to_the_cabinet_and_keeps_the_public_homepage_accessible(): void
+    {
+        $brand = '<a class="brand" href="/" aria-label="English Cards — головна">';
+        $this->get('/')->assertOk()->assertSee($brand, false);
+
+        $profile = LearningProfile::factory()->create();
+        $this->actingAs($profile->user)->get('/')->assertOk()->assertSee($brand, false);
+
+        $this->get(route('home'))->assertOk()
+            ->assertSeeInOrder([
+                'aria-label="Основна навігація"',
+                'href="'.route('home').'"',
+                'aria-current="page"',
+                'Мій кабінет</a>',
+                'href="'.route('profiles.index').'"',
+                'Профілі</a>',
+            ], false);
+
+        $this->get(route('profiles.index'))->assertOk()
+            ->assertSee('href="'.route('home').'" ><svg', false)
+            ->assertSeeInOrder(['href="'.route('profiles.index').'"', 'aria-current="page"', 'Профілі</a>'], false);
     }
 
     public function test_invalid_login_has_a_generic_error_and_is_throttled(): void
