@@ -363,6 +363,11 @@ input[aria-invalid='true'] { border-color: var(--danger); }
 
 .profile-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }
 
+.home-statistics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; margin: 1.5rem 0 0; }
+.home-statistics div { min-width: 0; padding: .75rem .5rem; border: 1px solid var(--border); border-radius: .75rem; background: var(--surface-soft); text-align: center; }
+.home-statistics dt { color: var(--muted); font-size: .8rem; line-height: 1.25; overflow-wrap: anywhere; }
+.home-statistics dd { margin: .25rem 0 0; color: var(--text); font-size: clamp(1.3rem, 5vw, 1.75rem); font-weight: 800; line-height: 1.15; overflow-wrap: anywhere; }
+
 .profile-actions form { display: flex; flex: 1 1 auto; }
 
 .profile-actions .button { flex: 1 1 auto; }
