@@ -17,7 +17,7 @@
 </head>
 <body>
     <a class="skip-link" href="#main">Перейти до вмісту</a>
-    <div class="site-wrap">
+    <div class="site-wrap @yield('layout-class')">
         <header class="site-header">
             <a class="brand" href="/" aria-label="English Cards — головна">English <span>Cards</span></a>
             <div class="header-actions">
@@ -65,7 +65,7 @@
             </div>
         </header>
 
-        <main id="main" class="auth-shell @if (request()->routeIs('learning.*', 'check.*', 'topics.index', 'profiles.index', 'vocabulary.import')) learning-shell @endif">
+        <main id="main" class="auth-shell @if (request()->routeIs('home', 'learning.*', 'check.*', 'topics.index', 'profiles.index', 'vocabulary.import')) learning-shell @endif">
             <div class="notice" role="status" data-ui-feedback hidden></div>
             @if (auth()->check() && auth()->user()->hasVerifiedEmail())
                 <div class="notice" data-check-sync data-user-id="{{ auth()->id() }}" data-url="{{ route('check.sync') }}" data-csrf="{{ csrf_token() }}" hidden>

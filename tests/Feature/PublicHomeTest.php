@@ -1,0 +1,34 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\User;
+use Tests\TestCase;
+
+class PublicHomeTest extends TestCase
+{
+    public function test_guests_see_registration_and_login_links(): void
+    {
+        $this->get('/')
+            ->assertOk()
+            ->assertSeeText('Вивчайте англійські слова легко')
+            ->assertSeeText('Два режими для практики')
+            ->assertSee('href="'.route('register').'">Зареєструватися</a>', false)
+            ->assertSee('href="'.route('login').'">Увійти</a>', false)
+            ->assertSeeText('Зареєструватися')
+            ->assertSeeText('Увійти')
+            ->assertDontSeeText('Мій кабінет');
+    }
+
+    public function test_authenticated_users_see_their_account_link_instead_of_guest_actions(): void
+    {
+        $user = User::factory()->make();
+
+        $this->actingAs($user)->get('/')
+            ->assertOk()
+            ->assertSee('href="'.route('home').'">Мій кабінет</a>', false)
+            ->assertSeeText('Мій кабінет')
+            ->assertDontSeeText('Зареєструватися')
+            ->assertDontSeeText('Увійти');
+    }
+}
