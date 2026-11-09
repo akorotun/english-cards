@@ -148,14 +148,22 @@ class CheckProgressSyncTest extends TestCase
 
     public function test_missing_and_inaccessible_words_are_skipped_without_disclosing_their_content(): void
     {
+        $this->freezeSecond();
         $profile = LearningProfile::factory()->create();
-        $words = Word::factory()->count(4)->create();
+        $words = Word::factory()->count(4)->sequence([], ['word_en' => 'at', 'word_uk' => 'поряд із'], [], [])->create();
         Topic::factory()->for($profile->user)->hasAttached($words[0])->create();
         Topic::factory()->for(User::factory())->hasAttached($words[1])->create();
         $words[2]->delete();
-        $this->actingAs($profile->user)->postJson(route('check.sync'), $this->payload($profile, $words->modelKeys()))
-            ->assertOk()->assertJsonPath('applied', 1)->assertJsonPath('skipped_word_ids', $words->slice(1)->values()->modelKeys())
-            ->assertDontSee($words[1]->word_en);
+        $payload = $this->payload($profile, $words->modelKeys());
+        $this->actingAs($profile->user)->postJson(route('check.sync'), $payload)
+            ->assertOk()->assertExactJson([
+                'session_uuid' => $payload['session_uuid'],
+                'learning_profile_id' => $profile->id,
+                'status' => 'synced',
+                'applied' => 1,
+                'skipped_word_ids' => $words->slice(1)->values()->modelKeys(),
+                'processed_at' => now()->toISOString(),
+            ]);
         $this->assertDatabaseCount('word_progress', 1);
     }
 

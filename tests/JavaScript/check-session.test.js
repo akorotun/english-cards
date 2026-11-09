@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createCheckState, nextCheckState, createCheckController, openCheckStorage, writeCheckState } from '../../resources/js/check-session.js';
+import { checkResults, createCheckState, nextCheckState, createCheckController, initializeCheckSession, openCheckStorage, writeCheckState } from '../../resources/js/check-session.js';
 
 const cards = [1, 2, 3].map((id) => ({ id, word_en: `word ${id}`, word_uk: `слово ${id}` }));
 const makeState = (items = cards) => createCheckState({ uuid: 'uuid', userId: 1, profileId: 2, cards: items }, () => 0);
@@ -43,6 +43,20 @@ test('repeat round shuffles only unknown words after all initial answers', () =>
         { word_id: 3, first: 'know' },
         { word_id: 1, first: 'dont_know', repeat: 'dont_know' },
     ]);
+});
+
+test('results count session answers and repeat only words missed in the second round', () => {
+    const finish = (answers) => answers.reduce((state, answer) => nextCheckState(state, answer, () => 0), makeState());
+    assert.deepEqual(checkResults(finish(['know', 'know', 'know']).answers), {
+        checked: 3, firstKnown: 3, neededRepeat: 0, remembered: 0, stillUnknown: 0, unknownIds: new Set(),
+    });
+    assert.deepEqual(checkResults(finish(['dont_know', 'know', 'dont_know', 'dont_know', 'know']).answers), {
+        checked: 3, firstKnown: 1, neededRepeat: 2, remembered: 1, stillUnknown: 1, unknownIds: new Set([1]),
+    });
+    assert.deepEqual(checkResults(finish(Array(6).fill('dont_know')).answers), {
+        checked: 3, firstKnown: 0, neededRepeat: 3, remembered: 0, stillUnknown: 3, unknownIds: new Set([1, 2, 3]),
+    });
+    assert.equal(checkResults(finish(['dont_know']).answers).stillUnknown, 0);
 });
 
 test('answers work without revealing; pending write blocks duplicate and failed write preserves state', async () => {
@@ -105,8 +119,7 @@ test('storage failures are propagated and success waits for transaction completi
     await assert.rejects(failed, /quota/);
 });
 
-test('screen reveals the translation and advances only after a successful IndexedDB transaction', async () => {
-    const { initializeCheckSession } = await import('../../resources/js/check-session.js');
+function checkScreen() {
     const element = () => ({
         hidden: false, textContent: '', disabled: false, dataset: {}, handlers: {}, attributes: {},
         setAttribute(name, value) { this.attributes[name] = value; },
@@ -119,16 +132,16 @@ test('screen reveals the translation and advances only after a successful Indexe
     const selectors = [
         'error', 'content', 'card-screen', 'complete', 'reveal', 'answers', 'audio-feedback',
         'round', 'progress', 'counter', 'en', 'uk', 'speak', 'exit', 'dialog', 'dialog-error',
-        'continue', 'confirm', 'complete-count',
+        'continue', 'confirm', 'complete-count', 'complete-title', 'complete-sync', 'complete-retry', 'restart',
     ];
     const elements = Object.fromEntries(selectors.map((name) => [`[data-check-${name}]`, element()]));
     const unknown = element(); unknown.dataset.checkAnswer = 'dont_know';
     const known = element(); known.dataset.checkAnswer = 'know';
     const buttons = [unknown, known];
     elements['[data-check-answers]'].querySelectorAll = () => buttons;
-    elements['[data-check-answers]'].querySelector = () => unknown;
+    elements['[data-check-complete]'].querySelectorAll = () => [];
     const root = {
-        dataset: { userId: '1', profileId: '2', cards: JSON.stringify(cards.slice(0, 2)) },
+        dataset: { userId: '1', profileId: '2', cards: JSON.stringify(cards.slice(0, 2)), restartUrl: '/check/start' },
         querySelector: (selector) => elements[selector],
     };
     const saved = [];
@@ -153,8 +166,23 @@ test('screen reveals the translation and advances only after a successful Indexe
     } };
     const oldWindow = globalThis.window;
     const oldDocument = globalThis.document;
-    globalThis.window = { indexedDB, crypto: { randomUUID: () => 'test-uuid' }, addEventListener() {} };
-    globalThis.document = { querySelector: () => null };
+    let uuid = 0;
+    globalThis.window = { indexedDB, crypto: { randomUUID: () => `test-${++uuid}` }, addEventListener() {} };
+    globalThis.document = { querySelector: () => null, addEventListener() {} };
+    return {
+        root, elements, db, saved, known, unknown,
+        complete: () => pendingTransaction.complete(),
+        abort: () => pendingTransaction.abort(),
+        restore() {
+            globalThis.window = oldWindow;
+            globalThis.document = oldDocument;
+        },
+    };
+}
+
+test('screen reveals the translation and advances only after a successful IndexedDB transaction', async () => {
+    const screen = checkScreen();
+    const { root, elements, saved, known, unknown } = screen;
     try {
         await initializeCheckSession(root);
         assert.equal(saved.length, 1);
@@ -167,7 +195,7 @@ test('screen reveals the translation and advances only after a successful Indexe
         const firstWord = elements['[data-check-en]'].textContent;
         const knownWithoutReveal = known.click();
         assert.equal(elements['[data-check-en]'].textContent, firstWord);
-        pendingTransaction.complete();
+        screen.complete();
         await knownWithoutReveal;
         assert.notEqual(elements['[data-check-en]'].textContent, firstWord);
         assert.equal(saved[1].answers[0].first, 'know');
@@ -190,14 +218,14 @@ test('screen reveals the translation and advances only after a successful Indexe
         const failed = unknown.click();
         assert.equal(unknown.disabled, true);
         assert.equal(elements['[data-check-en]'].textContent, previousWord);
-        pendingTransaction.abort();
+        screen.abort();
         await failed;
         assert.equal(elements['[data-check-en]'].textContent, previousWord);
         assert.equal(elements['[data-check-uk]'].attributes['aria-hidden'], 'false');
         assert.equal(elements['[data-check-error]'].hidden, false);
         assert.equal(saved.length, 2);
         const retry = unknown.click();
-        pendingTransaction.complete();
+        screen.complete();
         await retry;
         assert.equal(saved.length, 3);
         assert.equal(saved[2].answers.length, 2);
@@ -215,22 +243,83 @@ test('screen reveals the translation and advances only after a successful Indexe
         elements['[data-check-exit]'].click();
         const failedStop = elements['[data-check-confirm]'].click();
         assert.equal(elements['[data-check-continue]'].disabled, true);
-        pendingTransaction.abort();
+        screen.abort();
         await failedStop;
         assert.equal(elements['[data-check-dialog]'].open, true);
         assert.equal(elements['[data-check-dialog-error]'].hidden, false);
         assert.equal(elements['[data-check-card-screen]'].hidden, false);
         const stop = elements['[data-check-confirm]'].click();
-        pendingTransaction.complete();
+        screen.complete();
         await stop;
         assert.equal(saved[3].status, 'interrupted');
         assert.equal(saved[3].answers.length, 2);
         assert.equal(elements['[data-check-dialog]'].open, false);
         assert.equal(elements['[data-check-complete]'].hidden, false);
         assert.equal(elements['[data-check-complete-count]'].textContent, 2);
+        assert.equal(elements['[data-check-complete-title]'].textContent, 'Перевірку перервано');
+        assert.equal(elements['[data-check-restart]'].hidden, true);
         assert.equal(elements['[data-check-card-screen]'].hidden, true);
     } finally {
-        globalThis.window = oldWindow;
-        globalThis.document = oldDocument;
+        screen.restore();
+    }
+});
+
+test('repeat waits for confirmation and uses a fresh UUID for only the missed cards', async () => {
+    const screen = checkScreen();
+    const { root, elements, saved, known, unknown, db } = screen;
+    const restart = elements['[data-check-restart]'];
+    const retry = elements['[data-check-complete-retry]'];
+    const syncRequests = [];
+    let confirmSync;
+    let fetched = 0;
+    let profileId = 3;
+    window.fetch = async () => {
+        fetched++;
+        return { ok: true, json: async () => ({ user_id: 1, learning_profile_id: profileId, cards }) };
+    };
+    try {
+        await initializeCheckSession(root, {
+            db,
+            sync(uuid) {
+                syncRequests.push(uuid);
+                return new Promise((resolve) => { confirmSync = resolve; });
+            },
+        });
+        const first = known.click();
+        screen.complete();
+        await first;
+        const second = unknown.click();
+        screen.complete();
+        await second;
+        const last = unknown.click();
+        screen.complete();
+        await new Promise(setImmediate);
+        assert.equal(restart.hidden, false);
+        assert.equal(restart.disabled, true);
+        await restart.click();
+        assert.equal(fetched, 0);
+        confirmSync({ synced: false, message: 'Offline' });
+        await last;
+        assert.equal(retry.hidden, false);
+        assert.equal(restart.disabled, true);
+        const pending = retry.click();
+        confirmSync({ synced: true, message: 'Synced' });
+        await pending;
+        assert.deepEqual(syncRequests, [saved[0].session_uuid, saved[0].session_uuid]);
+        assert.equal(restart.disabled, false);
+        await restart.click();
+        assert.equal(elements['[data-check-error]'].hidden, false);
+        assert.equal(saved.length, 4);
+        profileId = 2;
+        const restarted = restart.click();
+        await new Promise(setImmediate);
+        screen.complete();
+        await restarted;
+        assert.notEqual(saved[4].session_uuid, saved[0].session_uuid);
+        assert.deepEqual(saved[4].word_ids, [saved[3].answers.find((answer) => answer.repeat === 'dont_know').word_id]);
+        assert.equal(saved[4].round, 1);
+        assert.equal(elements['[data-check-complete]'].hidden, true);
+    } finally {
+        screen.restore();
     }
 });

@@ -185,7 +185,7 @@ test('a failed older batch blocks new cards and keeps the retry action available
         assert.equal(root.hidden, false);
         assert.equal(retry.hidden, false);
         assert.equal(retry.disabled, false);
-        assert.match(message.textContent, /Дані залишаються/);
+        assert.match(message.textContent, /Відповіді залишаються/);
         assert.equal(db.rows.get('session').status, 'interrupted');
     });
 });
@@ -206,7 +206,7 @@ test('background retry preserves errors of another profile and removes only conf
         await retry.handlers.click();
         assert.equal(db.rows.size, 0);
         assert.equal(retry.hidden, true);
-        assert.match(message.textContent, /Прогрес синхронізовано/);
+        assert.match(message.textContent, /Попередні відповіді синхронізовано/);
     });
 });
 

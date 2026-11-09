@@ -63,6 +63,19 @@ export function freezeCheckState(state) {
     };
 }
 
+export function checkResults(answers) {
+    const unknownIds = new Set(answers.filter((answer) => answer.repeat === 'dont_know').map((answer) => answer.word_id));
+    const firstKnown = answers.filter((answer) => answer.first === 'know').length;
+    return {
+        checked: answers.length,
+        firstKnown,
+        neededRepeat: answers.length - firstKnown,
+        remembered: answers.filter((answer) => answer.repeat === 'know').length,
+        stillUnknown: unknownIds.size,
+        unknownIds,
+    };
+}
+
 export function openCheckStorage(indexedDB) {
     return new Promise((resolve, reject) => {
         if (!indexedDB) { reject(new Error('IndexedDB unavailable')); return; }
@@ -130,6 +143,9 @@ export async function initializeCheckSession(root, synchronization = null) {
     const content = root.querySelector('[data-check-content]');
     const cardScreen = root.querySelector('[data-check-card-screen]');
     const complete = root.querySelector('[data-check-complete]');
+    const syncMessage = root.querySelector('[data-check-complete-sync]');
+    const retrySync = root.querySelector('[data-check-complete-retry]');
+    const restart = root.querySelector('[data-check-restart]');
     const reveal = root.querySelector('[data-check-reveal]');
     const answers = root.querySelector('[data-check-answers]');
     const audioFeedback = root.querySelector('[data-check-audio-feedback]');
@@ -139,15 +155,26 @@ export async function initializeCheckSession(root, synchronization = null) {
     const continueButton = root.querySelector('[data-check-continue]');
     const confirmButton = root.querySelector('[data-check-confirm]');
     const showError = (message) => { error.textContent = message; error.hidden = false; };
+    const userId = Number(root.dataset.userId);
+    const profileId = Number(root.dataset.profileId);
     let controller;
-    try {
-        const db = synchronization?.db ?? await openCheckStorage(window.indexedDB);
-        const state = createCheckState({
-            uuid: window.crypto.randomUUID(), userId: Number(root.dataset.userId),
-            profileId: Number(root.dataset.profileId), cards: JSON.parse(root.dataset.cards),
-        });
+    let db;
+    let synced = false;
+    let syncing = false;
+    let restarting = false;
+    let exitAction;
+    let exitTrigger;
+
+    async function start(cards) {
+        const state = createCheckState({ uuid: window.crypto.randomUUID(), userId, profileId, cards });
         await writeCheckState(db, state, true);
         controller = createCheckController(state, (next) => writeCheckState(db, next));
+        synced = false;
+    }
+
+    try {
+        db = synchronization?.db ?? await openCheckStorage(window.indexedDB);
+        await start(JSON.parse(root.dataset.cards));
     } catch (exception) {
         showError(exception?.name === 'ConstraintError'
             ? 'Для цього профілю вже є незавершена або несинхронізована перевірка. Її відповіді залишаються в цьому браузері.'
@@ -166,7 +193,16 @@ export async function initializeCheckSession(root, synchronization = null) {
         cardScreen.hidden = finished;
         complete.hidden = !finished;
         if (finished) {
-            root.querySelector('[data-check-complete-count]').textContent = state.answers.length;
+            const results = checkResults(state.answers);
+            const interrupted = state.status === 'interrupted';
+            root.querySelector('[data-check-complete-title]').textContent = interrupted ? 'Перевірку перервано' : 'Перевірку завершено';
+            root.querySelector('[data-check-complete-count]').textContent = results.checked;
+            complete.querySelectorAll('[data-check-stat]').forEach((row) => {
+                row.hidden = interrupted;
+                row.querySelector('dd').textContent = results[row.dataset.checkStat];
+            });
+            restart.hidden = interrupted || results.stillUnknown === 0;
+            restart.disabled = !synced;
             complete.focus();
             return;
         }
@@ -183,6 +219,67 @@ export async function initializeCheckSession(root, synchronization = null) {
         answers.hidden = false;
         if (resetAudio) audioFeedback.hidden = true;
     }
+
+    async function syncResult() {
+        if (syncing || synced || controller.state().status === 'in_progress') return synced;
+        syncing = true;
+        retrySync.disabled = true;
+        const retryFocused = document.activeElement === retrySync;
+        syncMessage.textContent = 'Відповіді збережено в цьому браузері. Синхронізація…';
+        try {
+            const result = await synchronization?.sync(controller.state().session_uuid);
+            synced = result?.synced ?? false;
+            syncMessage.textContent = result?.message ?? 'Очікуємо підтвердження синхронізації.';
+            retrySync.hidden = synced || !synchronization;
+            restart.disabled = !synced;
+            if (synced && retryFocused) (restart.hidden ? complete : restart).focus();
+            return synced;
+        } finally {
+            syncing = false;
+            retrySync.disabled = false;
+        }
+    }
+
+    retrySync.addEventListener('click', syncResult);
+    restart.addEventListener('click', async () => {
+        const state = controller.state();
+        if (restarting || !synced || state.status !== 'ready_to_sync') return;
+        restarting = true;
+        restart.disabled = true;
+        error.hidden = true;
+        try {
+            const response = await window.fetch(root.dataset.restartUrl, {
+                headers: { Accept: 'application/json' }, cache: 'no-store', signal: AbortSignal.timeout(15000),
+            });
+            if (response.redirected || [401, 403].includes(response.status)) {
+                showError('Для нової перевірки поверніться до вибору тем і перевірте вхід та активний профіль.');
+                return;
+            }
+            if (!response.ok) throw new Error('Could not reload cards');
+            const currentSelection = await response.json();
+            if (currentSelection.user_id !== userId || currentSelection.learning_profile_id !== profileId) {
+                showError('Активний профіль змінився. Для нової перевірки поверніться до вибору тем.');
+                return;
+            }
+            const { unknownIds } = checkResults(state.answers);
+            const cards = currentSelection.cards.filter((card) => unknownIds.has(card.id));
+            if (!cards.length) {
+                showError('Картки для повторення більше не доступні у вибраних темах. Поверніться до вибору тем.');
+                return;
+            }
+            if (synchronization?.pageClosed?.()) return;
+            await start(cards);
+            retrySync.hidden = true;
+            render();
+            reveal.focus();
+        } catch {
+            showError('Не вдалося розпочати повторення. Спробуйте ще раз або поверніться до вибору тем.');
+        } finally {
+            restarting = false;
+            restart.disabled = !synced;
+        }
+    });
+
     reveal.addEventListener('click', () => { controller.toggleTranslation(); render(false); });
     answers.querySelectorAll('button').forEach((button) => button.addEventListener('click', async () => {
         if (controller.busy()) return;
@@ -193,7 +290,7 @@ export async function initializeCheckSession(root, synchronization = null) {
             if (await pending) {
                 render();
                 if (controller.state().status === 'in_progress') reveal.focus();
-                else await synchronization?.sync();
+                else await syncResult();
             }
         } catch {
             showError('Не вдалося зберегти відповідь у браузері. Спробуйте ще раз; картку не змінено.');
@@ -206,16 +303,35 @@ export async function initializeCheckSession(root, synchronization = null) {
             audioFeedback.hidden = false;
         });
     });
-    stop.addEventListener('click', () => {
+    function confirmExit(action, trigger) {
         if (controller.busy()) return;
+        exitAction = action;
+        exitTrigger = trigger;
         dialogError.hidden = true;
         dialog.showModal();
+    }
+    stop.addEventListener('click', () => confirmExit(null, stop));
+    document.addEventListener('click', (event) => {
+        if (controller.state().status !== 'in_progress' || event.defaultPrevented
+            || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+        const link = event.target.closest('[data-header-menu] a[href], a.brand[href]');
+        if (!link) return;
+        event.preventDefault();
+        confirmExit(() => window.location.assign(link.href), link.closest('details')?.querySelector('summary') ?? link);
+    });
+    document.addEventListener('submit', (event) => {
+        if (controller.state().status !== 'in_progress' || event.defaultPrevented || !event.target.matches('.site-nav-logout')) return;
+        event.preventDefault();
+        confirmExit(() => event.target.submit(), event.target.closest('details').querySelector('summary'));
     });
     continueButton.addEventListener('click', () => {
         if (!controller.busy()) dialog.close();
     });
     dialog.addEventListener('cancel', (event) => {
         if (controller.busy()) event.preventDefault();
+    });
+    dialog.addEventListener('close', () => {
+        if (controller.state().status === 'in_progress') exitTrigger?.focus();
     });
     confirmButton.addEventListener('click', async () => {
         if (controller.busy()) return;
@@ -224,7 +340,13 @@ export async function initializeCheckSession(root, synchronization = null) {
         confirmButton.disabled = true;
         continueButton.disabled = true;
         try {
-            if (await pending) { dialog.close(); render(); await synchronization?.sync(); }
+            if (await pending) {
+                const leave = exitAction;
+                error.hidden = true;
+                dialog.close();
+                render();
+                if (await syncResult() && !synchronization?.pageClosed?.()) leave?.();
+            }
         } catch {
             dialogError.textContent = 'Не вдалося зберегти стан перевірки. Спробуйте ще раз.';
             dialogError.hidden = false;
@@ -234,7 +356,7 @@ export async function initializeCheckSession(root, synchronization = null) {
         }
     });
     window.addEventListener('beforeunload', (event) => {
-        if (controller.state().status === 'in_progress' || controller.busy()) { event.preventDefault(); event.returnValue = ''; }
+        if (controller.state().status === 'in_progress' || restarting) { event.preventDefault(); event.returnValue = ''; }
     });
     render();
     content.hidden = false;

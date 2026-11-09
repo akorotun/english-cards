@@ -9,6 +9,7 @@ use App\Models\Topic;
 use App\Models\Word;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -30,7 +31,7 @@ class LearningController extends Controller
         return $this->selectionView($request, $profile);
     }
 
-    public function selection(Request $request): RedirectResponse|View
+    public function selection(Request $request): JsonResponse|RedirectResponse|View
     {
         $profile = $this->activeProfile->current($request);
 
@@ -77,17 +78,27 @@ class LearningController extends Controller
 
         $cards = $words->distinct()->orderBy('words.id')->get(['words.id', 'words.word_en', 'words.word_uk']);
 
-        if ($request->routeIs('learning.cards', 'check.start') && $cards->isNotEmpty()) {
-            if ($request->routeIs('check.start') && $cards->count() > CheckProgressSync::MAX_WORDS) {
-                throw ValidationException::withMessages(['topic_ids' => 'Для однієї перевірки оберіть теми загалом до 10 000 унікальних слів.'])
-                    ->redirectTo(route('check.index'));
-            }
+        $startsCheck = $request->routeIs('check.start');
 
+        if ($startsCheck && $cards->count() > CheckProgressSync::MAX_WORDS) {
+            throw ValidationException::withMessages(['topic_ids' => 'Для однієї перевірки оберіть теми загалом до 10 000 унікальних слів.'])
+                ->redirectTo(route('check.index'));
+        }
+
+        if ($startsCheck && $request->expectsJson()) {
+            return response()->json([
+                'user_id' => $request->user()->id,
+                'learning_profile_id' => $profile->id,
+                'cards' => $cards->map->only(['id', 'word_en', 'word_uk'])->values(),
+            ]);
+        }
+
+        if ($request->routeIs('learning.cards', 'check.start') && $cards->isNotEmpty()) {
             return view('learning.cards', [
                 'selectedTopics' => $selectedTopics,
                 'words' => $cards,
                 'needsReview' => $needsReview,
-                'isCheck' => $request->routeIs('check.start'),
+                'isCheck' => $startsCheck,
                 'profile' => $profile,
             ]);
         }

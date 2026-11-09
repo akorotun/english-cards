@@ -6,7 +6,7 @@
     @php
         $selectionUrl = route($isCheck ? 'check.selection' : 'learning.selection', ['topic_ids' => $selectedTopics->modelKeys(), 'needs_review' => (int) $needsReview]);
     @endphp
-    <section class="learning-session" @if ($isCheck) data-check-session data-user-id="{{ auth()->id() }}" data-profile-id="{{ $profile->id }}" @else data-learning-session @endif data-cards="{{ json_encode($words->map->only(['id', 'word_en', 'word_uk'])->values(), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) }}" aria-labelledby="learning-title">
+    <section class="learning-session" @if ($isCheck) data-check-session data-user-id="{{ auth()->id() }}" data-profile-id="{{ $profile->id }}" data-restart-url="{{ route('check.start', ['topic_ids' => $selectedTopics->modelKeys(), 'needs_review' => (int) $needsReview]) }}" @else data-learning-session @endif data-cards="{{ json_encode($words->map->only(['id', 'word_en', 'word_uk'])->values(), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) }}" aria-labelledby="learning-title">
         @include('learning.partials.title')
         @include('learning.partials.selected-topics', ['changeTopicsUrl' => $isCheck ? null : $selectionUrl])
         <noscript><p class="notice">Для перегляду карток увімкніть JavaScript.</p></noscript>
@@ -37,10 +37,22 @@
                     </div>
                 </div>
                 <div class="panel learning-complete" data-check-complete hidden tabindex="-1">
-                    <h2>Перевірку завершено</h2>
-                    <p>Перевірено слів: <strong data-check-complete-count></strong></p>
-                    <p data-check-complete-sync>Відповіді збережено в цьому браузері. Очікуємо підтвердження синхронізації.</p>
-                    <a class="button button-secondary" href="{{ route('check.index') }}">До вибору тем</a>
+                    <h2 data-check-complete-title>Перевірку завершено</h2>
+                    <dl class="check-results">
+                        <div><dt>Перевірено</dt><dd data-check-complete-count></dd></div>
+                        <div data-check-stat="firstKnown"><dt>З першої спроби знав</dt><dd></dd></div>
+                        <div data-check-stat="neededRepeat"><dt>Потребували повторення</dt><dd></dd></div>
+                        <div data-check-stat="remembered"><dt>Згадав під час повторення</dt><dd></dd></div>
+                        <div data-check-stat="stillUnknown"><dt>Залишилися незнайомими</dt><dd></dd></div>
+                    </dl>
+                    <div class="notice check-sync-status">
+                        <p role="status" data-check-complete-sync></p>
+                        <button class="button button-secondary" type="button" data-check-complete-retry hidden>Повторити синхронізацію</button>
+                    </div>
+                    <div class="learning-controls">
+                        <button class="button button-primary" type="button" data-check-restart hidden disabled>Повторити незнайомі</button>
+                        <a class="button button-secondary" href="{{ route('check.index') }}">Завершити</a>
+                    </div>
                 </div>
                 <dialog class="check-dialog" data-check-dialog aria-labelledby="check-dialog-title" aria-describedby="check-dialog-description">
                     <h2 id="check-dialog-title">Завершити перевірку?</h2>

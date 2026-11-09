@@ -64,6 +64,14 @@ class CheckSelectionTest extends TestCase
         $this->assertSame($words->modelKeys(), $all->viewData('words')->modelKeys());
         $review = $this->get(route('check.start', [...$params, 'needs_review' => 1]))->assertOk()->assertViewIs('learning.cards')->assertSee('data-check-session', false)->assertSee('Показати переклад')->assertDontSee('data-learning-previous', false);
         $this->assertSame($words->slice(1)->values()->modelKeys(), $review->viewData('words')->modelKeys());
+        $refreshUrl = route('check.start', [...$params, 'needs_review' => 1]);
+        $this->getJson($refreshUrl)->assertOk()
+            ->assertJsonPath('user_id', $profile->user_id)
+            ->assertJsonPath('learning_profile_id', $profile->id)
+            ->assertJsonPath('cards', $words->slice(1)->map->only(['id', 'word_en', 'word_uk'])->values()->all());
+        $this->withSession([ActiveLearningProfile::SESSION_KEY => $other->id])->getJson($refreshUrl)->assertOk()
+            ->assertJsonPath('learning_profile_id', $other->id)
+            ->assertJsonPath('cards', $words->except([$words[2]->id])->map->only(['id', 'word_en', 'word_uk'])->values()->all());
         foreach (['check.selection', 'check.start'] as $route) {
             $this->getJson(route($route, ['topic_ids' => [$system->id, $foreign->id]]))->assertUnprocessable()->assertJsonValidationErrors('topic_ids')->assertDontSee('Secret topic')->assertDontSee('secret');
         }

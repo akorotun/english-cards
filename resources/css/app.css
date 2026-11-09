@@ -584,6 +584,11 @@ button:disabled { opacity: .65; cursor: wait; }
 .check-dialog p { margin: 1rem 0 0; }
 .check-dialog .learning-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .check-dialog .learning-controls > * { padding-inline: .35rem; }
+.check-results { margin: 1rem 0; }
+.check-results > div { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding: .5rem 0; border-bottom: 1px solid var(--border); }
+.check-results dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+.check-sync-status p { margin: 0; }
+.check-sync-status button { margin-top: .5rem; }
 [data-check-answers] { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (hover: hover) {
     [data-check-answer="know"]:hover:not(:disabled) { background: color-mix(in srgb, var(--surface-soft) 85%, #138155); }

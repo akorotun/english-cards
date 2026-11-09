@@ -68,9 +68,9 @@ export function initializeCheckSync(root, sessionRoot = null) {
     const options = { url: root.dataset.url, csrf: root.dataset.csrf };
     const failures = new Map();
     const inFlight = new Map();
+    let recoveryMessage = '';
     let recovering = false;
     let sessionActive = false;
-    let sessionFinished = false;
     let starting = false;
     let pageClosed = false;
     let db;
@@ -87,33 +87,39 @@ export function initializeCheckSync(root, sessionRoot = null) {
         retry.disabled = recovering || inFlight.size > 0 || starting;
     }
 
-    function failure(profileId, error) {
+    function failureMessage(error) {
         const detail = error.status === 409 ? 'Сервер виявив конфлікт пакета.'
             : [401, 403, 419].includes(error.status) ? 'Оновіть сторінку та перевірте вхід до акаунта.'
                 : error.status === 422 || error.status === 404 ? 'Сервер не прийняв пакет. Перевірте доступність навчального профілю.'
                     : 'Не вдалося синхронізувати відповіді.';
-        failures.set(profileId, `${detail} Дані залишаються в цьому браузері. Нова перевірка цього профілю почнеться після підтвердження сервера.`);
-        report('');
+        return `${detail} Відповіді залишаються в цьому браузері. Нова перевірка цього профілю доступна після підтвердження сервера.`;
     }
 
-    function syncProfile(profileId) {
+    function syncProfile(profileId, sessionUuid = null) {
         if (inFlight.has(profileId)) return inFlight.get(profileId);
         const pending = (async () => {
-            report('Синхронізація відповідей…');
+            if (!sessionUuid) report('Синхронізація збережених відповідей…');
             try {
                 const results = await synchronizeCheckProfile(db, userId, profileId, options);
+                if (sessionUuid && !results.some((result) => result.session_uuid === sessionUuid)) {
+                    throw new Error('Missing synchronization acknowledgement');
+                }
                 failures.delete(profileId);
-                if (results.length) {
-                    const skipped = results.reduce((total, result) => total + result.skipped_word_ids.length, 0);
-                    report(`Прогрес синхронізовано.${skipped ? ` Недоступних або видалених слів пропущено: ${skipped}.` : ''}`);
-                    if (sessionActive && sessionFinished && profileId === activeProfile) {
-                        sessionRoot.querySelector('[data-check-complete-sync]').textContent = 'Прогрес синхронізовано.';
-                    }
-                } else if (!failures.size) root.hidden = true;
-                return true;
+                const skipped = results.reduce((total, result) => total + result.skipped_word_ids.length, 0);
+                const skippedMessage = skipped ? ` Недоступних або видалених слів пропущено: ${skipped}.` : '';
+                if (!sessionUuid) {
+                    if (results.length) recoveryMessage = `Попередні відповіді синхронізовано.${skippedMessage}`;
+                    if (recoveryMessage || failures.size) report(recoveryMessage);
+                    else root.hidden = true;
+                }
+                return { synced: true, message: `Прогрес синхронізовано.${skippedMessage}` };
             } catch (error) {
-                failure(profileId, error);
-                return false;
+                const text = failureMessage(error);
+                if (!sessionUuid) {
+                    failures.set(profileId, text);
+                    report('');
+                }
+                return { synced: false, message: text };
             } finally {
                 inFlight.delete(profileId);
                 retry.disabled = recovering || starting || inFlight.size > 0;
@@ -135,11 +141,10 @@ export function initializeCheckSync(root, sessionRoot = null) {
                     report('');
                     return;
                 }
-                if (pageClosed || !await syncProfile(activeProfile) || pageClosed) return;
-                sessionActive = await initializeCheckSession(sessionRoot, { db, sync: () => {
-                    sessionFinished = true;
-                    return syncProfile(activeProfile);
-                } });
+                if (pageClosed || !(await syncProfile(activeProfile)).synced || pageClosed) return;
+                sessionActive = await initializeCheckSession(sessionRoot, {
+                    db, sync: (uuid) => syncProfile(activeProfile, uuid), pageClosed: () => pageClosed,
+                });
                 starting = false;
                 ready();
                 if (sessionActive) await lifetime;
@@ -148,7 +153,12 @@ export function initializeCheckSync(root, sessionRoot = null) {
                 ready();
                 retry.disabled = recovering || inFlight.size > 0;
             }
-        }).catch((error) => { starting = false; failure(activeProfile, error); ready(); });
+        }).catch((error) => {
+            starting = false;
+            failures.set(activeProfile, failureMessage(error));
+            report('');
+            ready();
+        });
         await initialized;
     }
 
@@ -167,10 +177,7 @@ export function initializeCheckSync(root, sessionRoot = null) {
                     if (lock && !pageClosed) await syncProfile(profileId);
                 });
             }
-            if (sessionRoot && !pageClosed) {
-                if (!sessionActive) await startSession();
-                else if (sessionFinished) await syncProfile(activeProfile);
-            }
+            if (sessionRoot && !pageClosed && !sessionActive) await startSession();
         } catch {
             failures.set('storage', 'Не вдалося відкрити локальне сховище або захист між вкладками. Використайте сучасний браузер через HTTPS або localhost. Збережені відповіді не видалено.');
             report('');
