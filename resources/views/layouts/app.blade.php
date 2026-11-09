@@ -65,7 +65,7 @@
             </div>
         </header>
 
-        <main id="main" class="auth-shell @if (request()->routeIs('home', 'learning.*', 'check.*', 'topics.index', 'profiles.index', 'vocabulary.import')) learning-shell @endif">
+        <main id="main" class="auth-shell @if (request()->routeIs('home', 'learning.*', 'check.*', 'demo.*', 'topics.index', 'profiles.index', 'vocabulary.import')) learning-shell @endif">
             <div class="notice" role="status" data-ui-feedback hidden></div>
             @if (auth()->check() && auth()->user()->hasVerifiedEmail())
                 <div class="notice" data-check-sync data-user-id="{{ auth()->id() }}" data-url="{{ route('check.sync') }}" data-csrf="{{ csrf_token() }}" hidden>

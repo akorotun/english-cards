@@ -4,11 +4,17 @@
 
 @section('content')
     @php
+        $isDemo = $isDemo ?? false;
         $checkedTopicIds = old('topic_ids', $selectedTopics?->modelKeys() ?? []);
         $checkedTopicIds = is_array($checkedTopicIds) ? $checkedTopicIds : [];
         $reviewChecked = in_array(old('needs_review', $needsReview), [true, 1, '1'], true);
     @endphp
-    @include('learning.partials.title')
+    @if ($isDemo)
+        <h1 class="learning-header-title" id="learning-title">Деморежим</h1>
+        <p class="notice">У деморежимі доступні лише системні теми. Прогрес не зберігається. <a href="{{ route('register') }}">Зареєструватися</a> або <a href="{{ route('login') }}">увійти</a>.</p>
+    @else
+        @include('learning.partials.title')
+    @endif
     <section class="panel" aria-labelledby="learning-title">
 
         @if ($errors->any())
@@ -35,6 +41,15 @@
                 @include('learning.partials.selected-topics', ['changeTopicsUrl' => '#topic-selection'])
                 @if ($words->isEmpty())
                     <p>{{ $needsReview ? 'За фільтром немає карток. Вимкніть «Не показувати вивчені слова» або змініть теми.' : 'У вибраних темах поки немає слів. Оберіть інші теми.' }}</p>
+                @elseif ($isDemo)
+                    @if ($demoMode)
+                        <p>Цей режим демо поки недоступний. Оберіть теми або поверніться пізніше.</p>
+                    @else
+                        <div class="learning-controls">
+                            <a class="button button-primary" href="{{ route('demo.start', ['mode' => 'learning', 'topic_ids' => $selectedTopics->modelKeys()]) }}">Почати навчання</a>
+                            <a class="button button-secondary" href="{{ route('demo.start', ['mode' => 'check', 'topic_ids' => $selectedTopics->modelKeys()]) }}">Почати перевірку</a>
+                        </div>
+                    @endif
                 @elseif ($checkStarted)
                     <p>Підбірку сформовано. Перевірка карток поки недоступна.</p>
                 @else
@@ -44,10 +59,14 @@
         @endif
 
         @if ($topics->isEmpty())
-            <p class="notice">Доступних тем поки немає. Ви можете додати власні теми через імпорт слів.</p>
-            <a class="button button-secondary" href="{{ route('vocabulary.import') }}">Імпорт слів</a>
+            @if ($isDemo)
+                <p class="notice">Системних тем поки немає.</p>
+            @else
+                <p class="notice">Доступних тем поки немає. Ви можете додати власні теми через імпорт слів.</p>
+                <a class="button button-secondary" href="{{ route('vocabulary.import') }}">Імпорт слів</a>
+            @endif
         @else
-            <form method="get" action="{{ route($isCheck ? 'check.selection' : 'learning.selection') }}" class="form-stack" data-learning-selection data-has-result="{{ $words !== null ? '1' : '0' }}">
+            <form method="get" action="{{ route($isDemo ? 'demo.selection' : ($isCheck ? 'check.selection' : 'learning.selection')) }}" class="form-stack" data-learning-selection data-has-result="{{ $words !== null ? '1' : '0' }}">
                 <div class="learning-filters" data-topic-filters hidden>
                     <div class="learning-filter-heading">
                         <span>Фільтри</span>
@@ -61,12 +80,12 @@
                         <input id="learning-topic-search" type="search" placeholder="Пошук тем..." data-topic-search>
                         <button class="learning-search-clear" type="button" data-clear-search aria-label="Очистити пошук" title="Очистити пошук" hidden>×</button>
                     </div>
-                    <div data-topic-scope>
+                    @unless ($isDemo)<div data-topic-scope>
                         @include('topics.partials.filter', [
                             'name' => 'topic_scope', 'label' => 'Тип теми',
                             'options' => ['' => 'Усі', 'system' => 'Системні', 'own' => 'Власні'], 'selectedValue' => '', 'compactPrefix' => 'Тип',
                         ])
-                    </div>
+                    </div>@endunless
                     <div data-topic-level>
                         @include('topics.partials.filter', [
                             'name' => 'topic_level', 'label' => 'Рівень',
@@ -104,14 +123,14 @@
                         @endforeach
                     </ul>
                 </fieldset>
-                <div data-learned-filter @if (! $topics->contains(fn ($topic) => $topic->has_learned_words && in_array($topic->id, $checkedTopicIds))) hidden @endif>
+                @unless ($isDemo)<div data-learned-filter @if (! $topics->contains(fn ($topic) => $topic->has_learned_words && in_array($topic->id, $checkedTopicIds))) hidden @endif>
                     <input type="hidden" name="needs_review" value="0">
                     <label class="learning-option">
                         <input type="checkbox" name="needs_review" value="1" @checked($reviewChecked) aria-describedby="needs-review-hint">
                         <span>Не показувати вивчені слова</span>
                     </label>
                     <p id="needs-review-hint" class="hint">Приховати слова з рівнем знання 3 для цього профілю.</p>
-                </div>
+                </div>@endunless
                 <noscript><p class="hint">Щоб змінити фільтр, спочатку сформуйте підбірку з вибраних тем.</p></noscript>
                 <button class="button button-primary" type="submit">Сформувати підбірку</button>
             </form>

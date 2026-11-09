@@ -14,6 +14,7 @@
                 @else
                     <a class="button button-primary" href="{{ route('register') }}">Зареєструватися</a>
                     <a class="button button-secondary" href="{{ route('login') }}">Увійти</a>
+                    <a class="button button-secondary" href="{{ route('demo.index') }}">Спробувати без реєстрації</a>
                 @endauth
             </div>
         </div>

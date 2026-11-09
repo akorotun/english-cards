@@ -202,6 +202,7 @@ document.querySelectorAll('[data-learning-session]').forEach(initializeLearningS
 
 document.querySelectorAll('[data-learning-selection]').forEach((form) => {
     const filter = form.querySelector('[data-learned-filter]');
+    if (!filter) return;
     const checkbox = filter.querySelector('input[type="checkbox"]');
     const topics = [...form.querySelectorAll('input[name="topic_ids[]"]')];
 
@@ -241,7 +242,7 @@ document.querySelectorAll('[data-learning-selection]').forEach((form) => {
         let visible = 0;
         rows.forEach((row) => {
             const matches = row.dataset.name.toLocaleLowerCase().includes(search.value.trim().toLocaleLowerCase())
-                && (!scope.querySelector('input:checked').value || row.dataset.scope === scope.querySelector('input:checked').value)
+                && (!scope || !scope.querySelector('input:checked').value || row.dataset.scope === scope.querySelector('input:checked').value)
                 && (!level.querySelector('input:checked').value || row.dataset.level === level.querySelector('input:checked').value);
             row.hidden = !matches;
             if (matches) visible++;
@@ -249,7 +250,7 @@ document.querySelectorAll('[data-learning-selection]').forEach((form) => {
         form.querySelector('[data-filter-empty]').hidden = visible !== 0;
     }
 
-    [search, scope, level].forEach((input) => input.addEventListener('input', filterTopics));
+    [search, scope, level].filter(Boolean).forEach((input) => input.addEventListener('input', filterTopics));
     filterTopics();
     clearSearch.addEventListener('click', () => {
         search.value = '';
@@ -258,7 +259,7 @@ document.querySelectorAll('[data-learning-selection]').forEach((form) => {
     });
     form.querySelector('[data-reset-filters]').addEventListener('click', () => {
         search.value = '';
-        [scope, level].forEach((filter) => {
+        [scope, level].filter(Boolean).forEach((filter) => {
             const first = filter.querySelector('input');
             first.checked = true;
             first.dispatchEvent(new Event('change', { bubbles: true }));

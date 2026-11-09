@@ -63,10 +63,11 @@ class TopicBrowsingTest extends TestCase
         $system = Topic::factory()->create(['name' => 'Alpha']);
         $own = Topic::factory()->for($admin)->create(['name' => 'Beta']);
         Topic::factory()->for(User::factory())->create(['name' => 'Foreign secret', 'level' => 'C2']);
-        $response = $this->actingAs($admin)->get(route('topics.index', ['scope' => 'all', 'level' => '']));
+        $response = $this->actingAs($admin)->withSession(['_token' => 'testC2token'])->get(route('topics.index', ['scope' => 'all', 'level' => '']));
 
-        $response->assertOk()->assertDontSee('Foreign secret')->assertDontSee('C2');
+        $response->assertOk()->assertDontSee('Foreign secret')->assertDontSee('name="level" value="C2"', false);
         $this->assertSame([$system->id, $own->id], $response->viewData('topics')->modelKeys());
+        $this->assertNotContains('C2', $response->viewData('levels')->all());
     }
 
     public function test_topic_access_does_not_depend_on_the_active_profile(): void

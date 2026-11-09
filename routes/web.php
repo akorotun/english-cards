@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\CheckSyncController;
+use App\Http\Controllers\DemoController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LearningController;
 use App\Http\Controllers\LearningProfileController;
@@ -14,6 +15,12 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
+});
+
+Route::middleware('guest')->group(function (): void {
+    Route::get('/demo', [DemoController::class, 'index'])->name('demo.index');
+    Route::get('/demo/selection', [DemoController::class, 'selection'])->name('demo.selection');
+    Route::get('/demo/{mode}', [DemoController::class, 'selection'])->whereIn('mode', ['learning', 'check'])->name('demo.start');
 });
 
 Route::middleware('guest')->group(function (): void {
