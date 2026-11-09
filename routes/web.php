@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\CheckSyncController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LearningController;
 use App\Http\Controllers\LearningProfileController;
@@ -38,6 +39,7 @@ Route::middleware('auth')->group(function (): void {
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/home', HomeController::class)->name('home');
     Route::get('/check', [LearningController::class, 'index'])->name('check.index');
+    Route::post('/check/sync', CheckSyncController::class)->name('check.sync');
     Route::get('/check/selection', [LearningController::class, 'selection'])->name('check.selection');
     Route::get('/check/start', [LearningController::class, 'selection'])->name('check.start');
     Route::get('/learning', [LearningController::class, 'index'])->name('learning.index');

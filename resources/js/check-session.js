@@ -15,7 +15,7 @@ export function createCheckState({ uuid, userId, profileId, cards }, random = Ma
     }
     return {
         session_uuid: uuid, user_id: userId, learning_profile_id: profileId,
-        status: 'in_progress', cards, word_ids: cards.map((card) => card.id),
+        status: 'in_progress', created_at: Date.now(), cards, word_ids: cards.map((card) => card.id),
         first_order: shuffled(cards.map((card) => card.id), random), repeat_order: [],
         round: 1, position: 0, answers: [],
     };
@@ -47,7 +47,20 @@ export function nextCheckState(state, answer, random = Math.random) {
             next.status = 'ready_to_sync';
         }
     }
-    return next;
+    return next.status === 'ready_to_sync' ? freezeCheckState(next) : next;
+}
+
+export function freezeCheckState(state) {
+    if (state.sync_payload) return state;
+    const status = state.status === 'ready_to_sync' ? 'completed' : 'interrupted';
+    return {
+        ...state, status: status === 'completed' ? 'ready_to_sync' : 'interrupted',
+        sync_payload: {
+            session_uuid: state.session_uuid, user_id: state.user_id,
+            learning_profile_id: state.learning_profile_id, status,
+            word_ids: [...state.first_order], answers: state.answers.map((answer) => ({ ...answer })),
+        },
+    };
 }
 
 export function openCheckStorage(indexedDB) {
@@ -103,7 +116,7 @@ export function createCheckController(initialState, persist, random = Math.rando
             if (busy || state.status !== 'in_progress') return false;
             busy = true;
             try {
-                const next = { ...state, status: 'interrupted' };
+                const next = freezeCheckState({ ...state, status: 'interrupted' });
                 await persist(next);
                 state = next;
                 return true;
@@ -112,7 +125,7 @@ export function createCheckController(initialState, persist, random = Math.rando
     };
 }
 
-export async function initializeCheckSession(root) {
+export async function initializeCheckSession(root, synchronization = null) {
     const error = root.querySelector('[data-check-error]');
     const content = root.querySelector('[data-check-content]');
     const cardScreen = root.querySelector('[data-check-card-screen]');
@@ -128,7 +141,7 @@ export async function initializeCheckSession(root) {
     const showError = (message) => { error.textContent = message; error.hidden = false; };
     let controller;
     try {
-        const db = await openCheckStorage(window.indexedDB);
+        const db = synchronization?.db ?? await openCheckStorage(window.indexedDB);
         const state = createCheckState({
             uuid: window.crypto.randomUUID(), userId: Number(root.dataset.userId),
             profileId: Number(root.dataset.profileId), cards: JSON.parse(root.dataset.cards),
@@ -139,7 +152,7 @@ export async function initializeCheckSession(root) {
         showError(exception?.name === 'ConstraintError'
             ? 'Для цього профілю вже є незавершена або несинхронізована перевірка. Її відповіді залишаються в цьому браузері.'
             : 'Не вдалося відкрити локальне сховище. Перевірка не розпочалася; перевірте налаштування браузера та спробуйте знову.');
-        return;
+        return false;
     }
 
     const current = () => {
@@ -177,7 +190,11 @@ export async function initializeCheckSession(root) {
         const pending = controller.answer(button.dataset.checkAnswer);
         answers.querySelectorAll('button').forEach((item) => { item.disabled = true; });
         try {
-            if (await pending) { render(); if (controller.state().status === 'in_progress') reveal.focus(); }
+            if (await pending) {
+                render();
+                if (controller.state().status === 'in_progress') reveal.focus();
+                else await synchronization?.sync();
+            }
         } catch {
             showError('Не вдалося зберегти відповідь у браузері. Спробуйте ще раз; картку не змінено.');
         } finally { answers.querySelectorAll('button').forEach((item) => { item.disabled = false; }); }
@@ -207,7 +224,7 @@ export async function initializeCheckSession(root) {
         confirmButton.disabled = true;
         continueButton.disabled = true;
         try {
-            if (await pending) { dialog.close(); render(); }
+            if (await pending) { dialog.close(); render(); await synchronization?.sync(); }
         } catch {
             dialogError.textContent = 'Не вдалося зберегти стан перевірки. Спробуйте ще раз.';
             dialogError.hidden = false;
@@ -221,4 +238,5 @@ export async function initializeCheckSession(root) {
     });
     render();
     content.hidden = false;
+    return true;
 }

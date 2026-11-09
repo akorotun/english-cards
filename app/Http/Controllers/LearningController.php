@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\ActiveLearningProfile;
+use App\CheckProgressSync;
 use App\Models\LearningProfile;
 use App\Models\Topic;
 use App\Models\Word;
@@ -77,6 +78,11 @@ class LearningController extends Controller
         $cards = $words->distinct()->orderBy('words.id')->get(['words.id', 'words.word_en', 'words.word_uk']);
 
         if ($request->routeIs('learning.cards', 'check.start') && $cards->isNotEmpty()) {
+            if ($request->routeIs('check.start') && $cards->count() > CheckProgressSync::MAX_WORDS) {
+                throw ValidationException::withMessages(['topic_ids' => 'Для однієї перевірки оберіть теми загалом до 10 000 унікальних слів.'])
+                    ->redirectTo(route('check.index'));
+            }
+
             return view('learning.cards', [
                 'selectedTopics' => $selectedTopics,
                 'words' => $cards,

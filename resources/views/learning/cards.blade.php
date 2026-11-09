@@ -39,12 +39,12 @@
                 <div class="panel learning-complete" data-check-complete hidden tabindex="-1">
                     <h2>Перевірку завершено</h2>
                     <p>Перевірено слів: <strong data-check-complete-count></strong></p>
-                    <p>Відповіді збережено в цьому браузері. Прогрес ще не синхронізовано.</p>
+                    <p data-check-complete-sync>Відповіді збережено в цьому браузері. Очікуємо підтвердження синхронізації.</p>
                     <a class="button button-secondary" href="{{ route('check.index') }}">До вибору тем</a>
                 </div>
                 <dialog class="check-dialog" data-check-dialog aria-labelledby="check-dialog-title" aria-describedby="check-dialog-description">
                     <h2 id="check-dialog-title">Завершити перевірку?</h2>
-                    <p id="check-dialog-description">Зроблені відповіді буде збережено в цьому браузері. Неперевірені слова залишаться без змін. Прогрес ще не синхронізовано.</p>
+                    <p id="check-dialog-description">Зроблені відповіді буде збережено та надіслано на сервер. Неперевірені слова залишаться без змін.</p>
                     <p class="notice import-error" role="alert" data-check-dialog-error hidden></p>
                     <div class="learning-controls">
                         <button class="button button-secondary" type="button" data-check-continue autofocus>Продовжити</button>

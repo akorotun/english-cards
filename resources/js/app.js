@@ -273,8 +273,8 @@ document.querySelectorAll('[data-learning-selection]').forEach((form) => {
     });
 });
 
-import { initializeCheckSession } from './check-session';
-document.querySelectorAll('[data-check-session]').forEach(initializeCheckSession);
+import { initializeCheckSync } from './check-sync';
+initializeCheckSync(document.querySelector('[data-check-sync]'), document.querySelector('[data-check-session]'));
 
 
 document.querySelectorAll('[data-topic-browse-filters]').forEach((form) => {

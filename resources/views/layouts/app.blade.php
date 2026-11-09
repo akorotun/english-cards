@@ -66,6 +66,12 @@
 
         <main id="main" class="auth-shell @if (request()->routeIs('learning.*', 'check.*', 'topics.index', 'profiles.index', 'vocabulary.import')) learning-shell @endif">
             <div class="notice" role="status" data-ui-feedback hidden></div>
+            @if (auth()->check() && auth()->user()->hasVerifiedEmail())
+                <div class="notice" data-check-sync data-user-id="{{ auth()->id() }}" data-url="{{ route('check.sync') }}" data-csrf="{{ csrf_token() }}" hidden>
+                    <p role="status" aria-live="polite" data-check-sync-message></p>
+                    <button class="button button-secondary" type="button" data-check-sync-retry hidden>Повторити синхронізацію</button>
+                </div>
+            @endif
             @if (session('status'))
                 <div class="notice" role="status">{{ session('status') }}</div>
             @endif
