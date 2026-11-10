@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createLearningSession } from '../../resources/js/learning-session.js';
+import { createLearningSession, initializeLearningSession } from '../../resources/js/learning-session.js';
 
 test('navigation preserves shuffled order, respects boundaries, completes and restarts', () => {
     let random = 0;
@@ -26,6 +26,51 @@ test('navigation preserves shuffled order, respects boundaries, completes and re
     assert.equal(session.completed(), false);
     assert.equal(session.position(), 0);
     assert.equal(session.current(), 'a');
+});
+
+test('learning screen renders both languages and supports buttons, keyboard, swipes and restart', () => {
+    const element = () => ({
+        hidden: false, disabled: false, textContent: '', handlers: {},
+        addEventListener(type, handler) { this.handlers[type] = handler; },
+        click() { if (!this.disabled) this.handlers.click?.(); },
+        focus() {},
+    });
+    const names = ['card-screen', 'complete', 'previous', 'next', 'card', 'audio-feedback', 'en', 'uk', 'counter', 'progress', 'speak', 'restart', 'content'];
+    const elements = Object.fromEntries(names.map((name) => [`[data-learning-${name}]`, element()]));
+    const root = {
+        dataset: { cards: JSON.stringify([{ word_en: 'one', word_uk: 'один' }, { word_en: 'two', word_uk: 'два' }]) },
+        querySelector: (selector) => elements[selector],
+    };
+    const oldDocument = globalThis.document;
+    const documentHandlers = {};
+    globalThis.document = { addEventListener: (type, handler) => { documentHandlers[type] = handler; } };
+    try {
+        initializeLearningSession(root);
+        const get = (name) => elements[`[data-learning-${name}]`];
+        const first = get('en').textContent;
+        assert.equal(get('uk').textContent, first === 'one' ? 'один' : 'два');
+        assert.equal(get('counter').textContent, '1 / 2');
+        assert.equal(get('previous').disabled, true);
+        get('next').click();
+        assert.equal(get('counter').textContent, '2 / 2');
+        assert.notEqual(get('en').textContent, first);
+        get('previous').click();
+        assert.equal(get('en').textContent, first);
+        documentHandlers.keydown({ key: 'ArrowRight', target: { closest: () => false }, preventDefault() {} });
+        assert.equal(get('counter').textContent, '2 / 2');
+        get('card').handlers.touchstart({ touches: [{ clientX: 0, clientY: 0 }] });
+        get('card').handlers.touchend({ changedTouches: [{ clientX: 80, clientY: 5 }] });
+        assert.equal(get('counter').textContent, '1 / 2');
+        get('card').handlers.touchstart({ touches: [{ clientX: 80, clientY: 0 }] });
+        get('card').handlers.touchend({ changedTouches: [{ clientX: 0, clientY: 5 }] });
+        get('next').click();
+        assert.equal(get('complete').hidden, false);
+        get('restart').click();
+        assert.equal(get('complete').hidden, true);
+        assert.equal(get('counter').textContent, '1 / 2');
+    } finally {
+        globalThis.document = oldDocument;
+    }
 });
 
 import { speakEnglish } from '../../resources/js/learning-session.js';

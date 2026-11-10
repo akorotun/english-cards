@@ -2,9 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\LearningProfile;
+use App\Models\ProgressSyncBatch;
 use App\Models\Topic;
 use App\Models\User;
 use App\Models\Word;
+use App\Models\WordProgress;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -38,9 +41,7 @@ class DemoSelectionTest extends TestCase
         $response = $this->get(route('demo.selection', ['topic_ids' => [$first->id, $second->id], 'word_ids' => $secret->words->modelKeys()]));
         $response->assertOk()->assertSee('Почати навчання')->assertSee('Почати перевірку')->assertDontSee('secretword')->assertDontSee('Secret topic');
         $this->assertSame([$shared->id], $response->viewData('words')->modelKeys());
-        foreach (['learning', 'check'] as $mode) {
-            $this->get(route('demo.start', ['mode' => $mode, 'topic_ids' => [$first->id]]))->assertOk()->assertSee('Цей режим демо поки недоступний');
-        }
+        $this->get(route('demo.start', ['mode' => 'check', 'topic_ids' => [$first->id]]))->assertOk()->assertSee('Цей режим демо поки недоступний');
         foreach ($before as $table => $count) {
             $this->assertSame($count, DB::table($table)->count(), $table);
         }
@@ -60,6 +61,40 @@ class DemoSelectionTest extends TestCase
 
         $public->update(['user_id' => $private->user_id]);
         $this->getJson(route('demo.start', ['mode' => 'learning', 'topic_ids' => [$public->id]]))->assertUnprocessable();
+    }
+
+    public function test_guest_learning_cards_are_scoped_to_system_topics_and_do_not_change_progress(): void
+    {
+        $profile = LearningProfile::factory()->create();
+        $shared = Word::factory()->create(['word_en' => 'hello', 'word_uk' => 'привіт']);
+        $other = Word::factory()->create(['word_en' => 'light', 'word_uk' => 'світло']);
+        $system = Topic::factory()->hasAttached($shared)->hasAttached($other)->create(['name' => 'System topic']);
+        $second = Topic::factory()->hasAttached($shared)->create();
+        $private = Topic::factory()->for($profile->user)->hasAttached($shared)
+            ->hasAttached(Word::factory()->create(['word_en' => 'privateword', 'word_uk' => 'таємниця']))
+            ->create(['name' => 'Private topic']);
+        WordProgress::factory()->for($profile)->for($shared)->create(['knowledge_level' => 3]);
+        ProgressSyncBatch::factory()->for($profile)->create();
+        $tables = ['users', 'learning_profiles', 'word_progress', 'progress_sync_batches'];
+        $before = collect($tables)->mapWithKeys(fn ($table) => [$table => DB::table($table)->get()->toJson()])->all();
+        $params = ['mode' => 'learning', 'topic_ids' => [$system->id, $second->id], 'word_ids' => $private->words->modelKeys(), 'learning_profile_id' => $profile->id];
+
+        $response = $this->get(route('demo.start', $params));
+        $response->assertOk()->assertViewIs('learning.cards')->assertSee('data-learning-session', false)
+            ->assertSee('hello')->assertSee('data-learning-uk', false)->assertSee('Назад')->assertSee('Далі')->assertSee('Пройти ще раз')
+            ->assertSee(route('demo.selection', ['topic_ids' => [$system->id, $second->id]]))
+            ->assertDontSee('Private topic')->assertDontSee('privateword')->assertDontSee('таємниця')
+            ->assertDontSee('data-check-session', false)->assertDontSee('data-check-sync', false);
+        $this->assertSame([$shared->id, $other->id], $response->viewData('words')->modelKeys());
+        $this->assertSame(['привіт', 'світло'], $response->viewData('words')->pluck('word_uk')->all());
+
+        $this->get(route('demo.selection', ['topic_ids' => [$system->id, $second->id]]))->assertOk();
+        $this->get(route('demo.start', $params))->assertOk();
+        $this->getJson(route('demo.start', ['mode' => 'learning', 'topic_ids' => [$system->id, $private->id]]))
+            ->assertUnprocessable()->assertDontSee('privateword')->assertDontSee('Private topic');
+        foreach ($before as $table => $contents) {
+            $this->assertSame($contents, DB::table($table)->get()->toJson(), $table);
+        }
     }
 
     public function test_empty_collections_and_protected_actions(): void
