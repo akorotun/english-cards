@@ -12,6 +12,14 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#edf6ff">
+    @guest
+        <script>
+            try {
+                const guestTheme = localStorage.getItem('english-cards-guest-theme');
+                if (['system', 'light', 'dark'].includes(guestTheme)) document.documentElement.dataset.theme = guestTheme;
+            } catch {}
+        </script>
+    @endguest
     <title>@yield('title', 'English Cards')</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -39,6 +47,11 @@
                 @if ($layoutActiveProfile && ! request()->routeIs('profiles.show'))
                     @include('profiles.partials.theme-menu', ['themeProfile' => $layoutActiveProfile])
                 @endif
+                @guest
+                    @if (request()->is('/'))
+                        @include('profiles.partials.theme-menu', ['guestThemeMenu' => true])
+                    @endif
+                @endguest
                 @auth
                     @if (auth()->user()->hasVerifiedEmail())
                         <details class="navigation-menu" data-header-menu data-dropdown>

@@ -14,7 +14,10 @@ class PublicHomeTest extends TestCase
             ->assertSeeText('Вивчайте англійські слова легко')
             ->assertSeeText('Два режими для практики')
             ->assertSee('href="'.route('register').'">Зареєструватися</a>', false)
-            ->assertSee('href="'.route('login').'">Увійти</a>', false)
+            ->assertSee('href="'.route('login').'"', false)
+            ->assertSee('href="'.route('demo.index').'"', false)
+            ->assertSee('data-guest-theme', false)
+            ->assertSee('english-cards-guest-theme', false)
             ->assertSeeText('Зареєструватися')
             ->assertSeeText('Увійти')
             ->assertDontSeeText('Мій кабінет');
@@ -29,6 +32,15 @@ class PublicHomeTest extends TestCase
             ->assertSee('href="'.route('home').'">Мій кабінет</a>', false)
             ->assertSeeText('Мій кабінет')
             ->assertDontSeeText('Зареєструватися')
-            ->assertDontSeeText('Увійти');
+            ->assertDontSeeText('Увійти')
+            ->assertDontSee('data-guest-theme', false)
+            ->assertDontSee('english-cards-guest-theme', false);
+    }
+
+    public function test_guest_theme_is_restored_on_other_guest_pages_without_a_second_switcher(): void
+    {
+        $this->get(route('login'))->assertOk()
+            ->assertSee('english-cards-guest-theme', false)
+            ->assertDontSee('data-guest-theme', false);
     }
 }

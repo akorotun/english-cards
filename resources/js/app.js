@@ -66,6 +66,19 @@ systemDark.addEventListener('change', () => {
     }
 });
 
+document.querySelectorAll('[data-guest-theme]').forEach((button) => {
+    button.addEventListener('click', () => {
+        const theme = button.dataset.themeOption;
+        applyTheme(theme);
+        try {
+            localStorage.setItem('english-cards-guest-theme', theme);
+        } catch {
+            showFeedback('Не вдалося зберегти тему в цьому браузері.');
+        }
+        button.closest('[data-theme-menu]').open = false;
+    });
+});
+
 document.querySelectorAll('[data-theme-form]').forEach((form) => {
     form.addEventListener('submit', async (event) => {
         event.preventDefault();

@@ -12,9 +12,9 @@
                 @auth
                     <a class="button button-primary" href="{{ route('home') }}">Мій кабінет</a>
                 @else
-                    <a class="button button-primary" href="{{ route('register') }}">Зареєструватися</a>
-                    <a class="button button-secondary" href="{{ route('login') }}">Увійти</a>
-                    <a class="button button-secondary" href="{{ route('demo.index') }}">Спробувати без реєстрації</a>
+                    <a class="button button-primary welcome-register" href="{{ route('register') }}">Зареєструватися</a>
+                    <a class="button button-secondary welcome-login" href="{{ route('login') }}"><span class="welcome-login-prefix">Вже маєте акаунт?</span><span class="welcome-login-action">Увійти</span></a>
+                    <a class="button button-secondary welcome-demo" href="{{ route('demo.index') }}">Спробувати без реєстрації</a>
                 @endauth
             </div>
         </div>

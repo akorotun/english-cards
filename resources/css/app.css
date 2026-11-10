@@ -609,6 +609,15 @@ button:disabled { opacity: .65; cursor: wait; }
 .welcome-introduction h1 { max-width: 12ch; font-size: clamp(2.2rem, 6vw, 4.2rem); font-weight: 800; line-height: 1.08; letter-spacing: -.045em; }
 .welcome-introduction .intro { max-width: 31rem; font-size: 1.1rem; }
 .welcome-actions { flex-direction: row; flex-wrap: wrap; }
+.welcome-login-prefix { display: none; }
+@media (max-width: 39.99rem) {
+    .welcome-actions { flex-direction: column; flex-wrap: nowrap; align-items: stretch; }
+    .welcome-register { order: 1; }
+    .welcome-demo { order: 2; }
+    .welcome-login { order: 3; align-self: center; gap: .25rem; min-height: 2.75rem; padding: .25rem; border: 0; background: transparent; box-shadow: none; color: var(--primary); }
+    .welcome-login-prefix { display: inline; color: var(--muted); font-weight: 400; }
+    .welcome-login-action { text-decoration: underline; text-underline-offset: .16em; }
+}
 .welcome-modes h2 { margin: 0 0 1rem; font-size: 1.15rem; font-weight: 700; letter-spacing: -.02em; }
 .welcome-mode-list { display: grid; gap: .75rem; }
 .welcome-mode { display: flex; align-items: flex-start; gap: .75rem; padding: 1rem; border: 1px solid var(--border); border-radius: 1.25rem; background: var(--surface); }

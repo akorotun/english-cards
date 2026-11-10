@@ -73,5 +73,8 @@ class AuthProfileJourneyTest extends TestCase
         $this->post(route('profiles.activate', $firstProfile))->assertRedirect(route('home'));
         $this->get(route('home'))->assertOk()->assertSee('Анна оновлена')
             ->assertSee('data-theme="dark"', false);
+        $this->get('/')->assertOk()->assertSee('data-theme="dark"', false)
+            ->assertDontSee('english-cards-guest-theme', false)
+            ->assertDontSee('data-guest-theme', false);
     }
 }

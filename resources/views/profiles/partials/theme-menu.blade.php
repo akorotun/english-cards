@@ -8,6 +8,15 @@
     <div class="theme-options" aria-label="Тема оформлення">
         <p class="theme-options-title">Тема оформлення</p>
         @foreach (\App\ThemePreference::cases() as $themeOption)
+            @if ($guestThemeMenu ?? false)
+                <button type="button" data-guest-theme data-theme-option="{{ $themeOption->value }}" aria-pressed="{{ $themeOption === \App\ThemePreference::System ? 'true' : 'false' }}">
+                    {{ match ($themeOption) {
+                        \App\ThemePreference::System => 'Системна',
+                        \App\ThemePreference::Light => 'Світла',
+                        \App\ThemePreference::Dark => 'Темна',
+                    } }}
+                </button>
+            @else
             <form method="post" action="{{ route('profiles.theme.update', $themeProfile) }}" data-theme-form>
                 @csrf
                 @method('PATCH')
@@ -20,6 +29,7 @@
                     } }}
                 </button>
             </form>
+            @endif
         @endforeach
     </div>
 </details>
