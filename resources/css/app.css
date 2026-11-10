@@ -544,7 +544,7 @@ button:disabled { opacity: .65; cursor: wait; }
 
 .learning-reading-card { display: grid; grid-template-rows: repeat(2, minmax(min-content, 1fr)); min-height: 18rem; }
 .learning-reading-card .learning-word, .learning-reading-card .learning-translation { display: grid; align-content: safe center; min-width: 0; padding-block: 1rem; }
-.learning-reading-card .learning-translation { margin: 0; border-top: 1px solid var(--border); }
+.learning-reading-card .learning-translation { margin: 0; border-top: 1px solid transparent; }
 .learning-navigation { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 [data-learning-speak], [data-check-speak] { gap: .45rem; }
 [data-learning-speak] svg, [data-check-speak] svg { flex: none; width: 1.125rem; height: 1.125rem; color: var(--primary); }
@@ -572,7 +572,17 @@ button:disabled { opacity: .65; cursor: wait; }
 
 .check-card { display: grid; grid-template-rows: minmax(min-content, 1fr) minmax(min-content, 1fr); min-height: 18rem; }
 .check-card .learning-word, .check-translation { display: grid; align-content: center; min-width: 0; padding-block: 1rem; }
-.check-translation { margin: 0; border-top: 1px solid var(--border); }
+.check-translation { margin: 0; border-top: 1px solid transparent; }
+.learning-reading-card, .check-card { position: relative; }
+.learning-reading-card::before, .check-card::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    inset-inline: clamp(1rem, 5vw, 2rem);
+    height: 1px;
+    background: linear-gradient(var(--border), var(--border)) center / 78% 1px no-repeat;
+    pointer-events: none;
+}
 @media (min-width: 48rem) {
     .learning-reading-card, .check-card { padding-block: 1.5rem; }
     .learning-reading-card .learning-word, .learning-reading-card .learning-translation,
