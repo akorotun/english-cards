@@ -5,7 +5,7 @@
 @section('content')
     @php
         $selectionUrl = ($isDemo ?? false)
-            ? route('demo.selection', ['topic_ids' => $selectedTopics->modelKeys()])
+            ? route('demo.index', ['topic_ids' => $selectedTopics->modelKeys()])
             : route($isCheck ? 'check.selection' : 'learning.selection', ['topic_ids' => $selectedTopics->modelKeys(), 'needs_review' => (int) $needsReview]);
     @endphp
     <section class="learning-session" @if ($isCheck && ($isDemo ?? false)) data-demo-check-session @elseif ($isCheck) data-check-session data-user-id="{{ auth()->id() }}" data-profile-id="{{ $profile->id }}" data-restart-url="{{ route('check.start', ['topic_ids' => $selectedTopics->modelKeys(), 'needs_review' => (int) $needsReview]) }}" @else data-learning-session @endif data-cards="{{ json_encode($words->map->only(['id', 'word_en', 'word_uk'])->values(), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) }}" aria-labelledby="learning-title">

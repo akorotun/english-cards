@@ -8,6 +8,8 @@ use App\Models\Topic;
 use App\Models\User;
 use App\Models\Word;
 use App\Models\WordProgress;
+use DOMDocument;
+use DOMXPath;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -57,6 +59,10 @@ class DemoSelectionTest extends TestCase
                 $this->getJson(route($route, $params))->assertUnprocessable()->assertDontSee('Secret topic')->assertDontSee('secretword');
             }
         }
+        foreach ([[$private->id], [$public->id, $private->id], [$public->id, 999999], [$public->id, $public->id]] as $ids) {
+            $this->getJson(route('demo.index', ['topic_ids' => $ids]))->assertUnprocessable()
+                ->assertDontSee('Secret topic')->assertDontSee('secretword');
+        }
         $this->get(route('demo.selection'))->assertRedirect(route('demo.index'))->assertSessionHasErrors('topic_ids');
 
         $public->update(['user_id' => $private->user_id]);
@@ -82,7 +88,7 @@ class DemoSelectionTest extends TestCase
         $response = $this->get(route('demo.start', $params));
         $response->assertOk()->assertViewIs('learning.cards')->assertSee('data-learning-session', false)
             ->assertSee('hello')->assertSee('data-learning-uk', false)->assertSee('Назад')->assertSee('Далі')->assertSee('Пройти ще раз')
-            ->assertSee(route('demo.selection', ['topic_ids' => [$system->id, $second->id]]))
+            ->assertSee(route('demo.index', ['topic_ids' => [$system->id, $second->id]]))
             ->assertDontSee('Private topic')->assertDontSee('privateword')->assertDontSee('таємниця')
             ->assertDontSee('data-check-session', false)->assertDontSee('data-check-sync', false);
         $this->assertSame([$shared->id, $other->id], $response->viewData('words')->modelKeys());
@@ -95,6 +101,38 @@ class DemoSelectionTest extends TestCase
         foreach ($before as $table => $contents) {
             $this->assertSame($contents, DB::table($table)->get()->toJson(), $table);
         }
+    }
+
+    public function test_guest_returns_directly_to_edit_selected_system_topics_from_both_modes(): void
+    {
+        $first = Topic::factory()->hasAttached(Word::factory())->create();
+        $second = Topic::factory()->hasAttached(Word::factory())->create();
+        $other = Topic::factory()->create();
+        $ids = [$first->id, $second->id];
+        $editUrl = route('demo.index', ['topic_ids' => $ids]);
+
+        foreach (['learning', 'check'] as $mode) {
+            $response = $this->get(route('demo.start', ['mode' => $mode, 'topic_ids' => $ids]))->assertOk();
+            $document = new DOMDocument;
+            $document->loadHTML($response->getContent(), LIBXML_NOERROR | LIBXML_NOWARNING);
+            $xpath = new DOMXPath($document);
+            $completionAttribute = $mode === 'learning' ? 'data-learning-complete' : 'data-demo-check-complete';
+            $link = $xpath->query('//div[@'.$completionAttribute.']//a')->item(0);
+            $this->assertNotNull($link);
+            $this->assertSame($editUrl, $link->getAttribute('href'));
+        }
+
+        $edit = $this->get($editUrl)->assertOk()->assertViewIs('learning.index')
+            ->assertDontSee('data-selection-result', false)->assertSee(route('demo.selection'));
+        $this->assertNull($edit->viewData('words'));
+        $this->assertSame($ids, $edit->viewData('selectedTopics')->modelKeys());
+        foreach ($ids as $id) {
+            $this->assertMatchesRegularExpression('/value="'.$id.'"[^>]*\schecked/', $edit->getContent());
+        }
+        $this->assertDoesNotMatchRegularExpression('/value="'.$other->id.'"[^>]*\schecked/', $edit->getContent());
+
+        $this->get(route('demo.selection', ['topic_ids' => [$second->id, $other->id]]))
+            ->assertOk()->assertSee('data-selection-result', false)->assertSee('Почати навчання')->assertSee('Почати перевірку');
     }
 
     public function test_guest_check_uses_only_system_words_and_cannot_save_progress(): void
@@ -111,7 +149,7 @@ class DemoSelectionTest extends TestCase
         $response = $this->get(route('demo.start', ['mode' => 'check', 'topic_ids' => [$system->id], 'word_ids' => $private->words->modelKeys(), 'learning_profile_id' => $profile->id]));
         $response->assertOk()->assertViewIs('learning.cards')->assertSee('data-demo-check-session', false)
             ->assertSee('data-check-reveal', false)->assertSee('aria-hidden="true"', false)->assertSee('data-demo-check-next disabled', false)
-            ->assertSee('Пройти ще раз')->assertSee(route('demo.selection', ['topic_ids' => [$system->id]]))
+            ->assertSee('Пройти ще раз')->assertSee(route('demo.index', ['topic_ids' => [$system->id]]))
             ->assertDontSee('Знаю')->assertDontSee('Не знаю')->assertDontSee('data-check-stat', false)
             ->assertDontSee('data-check-session', false)->assertDontSee('data-check-sync', false)
             ->assertDontSee('Private topic')->assertDontSee('privateword');
