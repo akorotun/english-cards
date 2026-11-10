@@ -41,10 +41,10 @@ class DemoController extends Controller
             $query->whereNull('topics.user_id')->whereIn('topics.id', $selectedTopics->modelKeys());
         })->distinct()->orderBy('words.id')->get(['words.id', 'words.word_en', 'words.word_uk']);
 
-        if ($request->route('mode') === 'learning' && $words->isNotEmpty()) {
+        if (in_array($request->route('mode'), ['learning', 'check'], true) && $words->isNotEmpty()) {
             return view('learning.cards', [
                 'isDemo' => true,
-                'isCheck' => false,
+                'isCheck' => $request->route('mode') === 'check',
                 'selectedTopics' => $selectedTopics,
                 'words' => $words,
                 'needsReview' => false,

@@ -1,5 +1,11 @@
 import { speakEnglish } from './learning-session.js';
 
+export function renderCheckTranslation(translation, reveal, word, revealed) {
+    translation.textContent = word;
+    translation.setAttribute('aria-hidden', String(!revealed));
+    reveal.setAttribute('aria-expanded', String(revealed));
+}
+
 export function shuffled(items, random = Math.random) {
     const result = [...items];
     for (let i = result.length - 1; i > 0; i--) {
@@ -213,9 +219,7 @@ export async function initializeCheckSession(root, synchronization = null) {
         root.querySelector('[data-check-counter]').textContent = `${state.position + 1} / ${order.length}`;
         root.querySelector('[data-check-en]').textContent = current().word_en;
         const translation = root.querySelector('[data-check-uk]');
-        translation.textContent = current().word_uk;
-        translation.setAttribute('aria-hidden', String(!controller.revealed()));
-        reveal.setAttribute('aria-expanded', String(controller.revealed()));
+        renderCheckTranslation(translation, reveal, current().word_uk, controller.revealed());
         answers.hidden = false;
         if (resetAudio) audioFeedback.hidden = true;
     }

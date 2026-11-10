@@ -8,11 +8,31 @@
             ? route('demo.selection', ['topic_ids' => $selectedTopics->modelKeys()])
             : route($isCheck ? 'check.selection' : 'learning.selection', ['topic_ids' => $selectedTopics->modelKeys(), 'needs_review' => (int) $needsReview]);
     @endphp
-    <section class="learning-session" @if ($isCheck) data-check-session data-user-id="{{ auth()->id() }}" data-profile-id="{{ $profile->id }}" data-restart-url="{{ route('check.start', ['topic_ids' => $selectedTopics->modelKeys(), 'needs_review' => (int) $needsReview]) }}" @else data-learning-session @endif data-cards="{{ json_encode($words->map->only(['id', 'word_en', 'word_uk'])->values(), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) }}" aria-labelledby="learning-title">
+    <section class="learning-session" @if ($isCheck && ($isDemo ?? false)) data-demo-check-session @elseif ($isCheck) data-check-session data-user-id="{{ auth()->id() }}" data-profile-id="{{ $profile->id }}" data-restart-url="{{ route('check.start', ['topic_ids' => $selectedTopics->modelKeys(), 'needs_review' => (int) $needsReview]) }}" @else data-learning-session @endif data-cards="{{ json_encode($words->map->only(['id', 'word_en', 'word_uk'])->values(), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) }}" aria-labelledby="learning-title">
         @include('learning.partials.title')
-        @include('learning.partials.selected-topics', ['changeTopicsUrl' => $isCheck ? null : $selectionUrl])
+        @include('learning.partials.selected-topics', ['changeTopicsUrl' => $isCheck && ! ($isDemo ?? false) ? null : $selectionUrl])
         <noscript><p class="notice">Для перегляду карток увімкніть JavaScript.</p></noscript>
-        @if ($isCheck)
+        @if ($isCheck && ($isDemo ?? false))
+            <div data-demo-check-content hidden>
+                <div data-demo-check-card-screen>
+                    <div class="learning-position">
+                        <progress class="learning-position-bar" data-demo-check-progress max="{{ $words->count() }}" value="1" aria-label="Позиція в підбірці"></progress>
+                        <p class="learning-counter" aria-live="polite" data-demo-check-counter></p>
+                    </div>
+                    @include('learning.partials.check-card')
+                    <div class="learning-controls">
+                        <button class="button button-primary" type="button" data-demo-check-next disabled>Далі →</button>
+                    </div>
+                </div>
+                <div class="panel learning-complete" data-demo-check-complete hidden tabindex="-1">
+                    <h2>Перегляд завершено</h2>
+                    <div class="learning-controls">
+                        <button class="button button-primary" type="button" data-demo-check-restart>Пройти ще раз</button>
+                        <a class="button button-secondary" href="{{ $selectionUrl }}">Змінити теми</a>
+                    </div>
+                </div>
+            </div>
+        @elseif ($isCheck)
             <p class="notice import-error" role="alert" data-check-error hidden></p>
             <div data-check-content hidden>
                 <div data-check-card-screen>
@@ -24,15 +44,7 @@
                         <progress class="learning-position-bar" data-check-progress value="1" aria-label="Позиція у поточному колі"></progress>
                         <p class="learning-counter" aria-live="polite" data-check-counter></p>
                     </div>
-                    <div class="learning-card check-card">
-                        <p class="learning-word" lang="en" data-check-en></p>
-                        <p class="learning-translation check-translation" lang="uk"><span id="check-translation" data-check-uk aria-hidden="true"></span></p>
-                    </div>
-                    <div class="learning-controls check-assists">
-                        <button class="button button-secondary check-reveal" type="button" data-check-reveal aria-expanded="false" aria-controls="check-translation"><span>Показати переклад</span><span>Приховати переклад</span></button>
-                        <button class="button button-secondary" type="button" data-check-speak aria-label="Послухати англійське слово"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg>Послухати</button>
-                    </div>
-                    <p class="learning-audio-feedback" role="status" data-check-audio-feedback hidden></p>
+                    @include('learning.partials.check-card')
                     <div class="learning-controls" data-check-answers>
                         <button class="button button-secondary" type="button" data-check-answer="dont_know">Не знаю</button>
                         <button class="button button-secondary" type="button" data-check-answer="know">Знаю</button>

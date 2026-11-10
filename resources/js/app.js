@@ -277,6 +277,9 @@ document.querySelectorAll('[data-learning-selection]').forEach((form) => {
 import { initializeCheckSync } from './check-sync';
 initializeCheckSync(document.querySelector('[data-check-sync]'), document.querySelector('[data-check-session]'));
 
+import { initializeDemoCheckSession } from './demo-check-session';
+document.querySelectorAll('[data-demo-check-session]').forEach(initializeDemoCheckSession);
+
 
 document.querySelectorAll('[data-topic-browse-filters]').forEach((form) => {
     const search = form.querySelector('[data-browse-search]');
