@@ -24,12 +24,10 @@ export function initializeDemoCheckSession(root) {
         renderCheckTranslation(translation, reveal, session.current().word_uk, revealed);
         root.querySelector('[data-demo-check-counter]').textContent = `${session.position() + 1} / ${session.count()}`;
         root.querySelector('[data-demo-check-progress]').value = session.position() + 1;
-        next.disabled = !revealed;
     }
 
     reveal.addEventListener('click', () => { revealed = !revealed; render(); });
     next.addEventListener('click', () => {
-        if (!revealed) return;
         session.next();
         revealed = false;
         render();

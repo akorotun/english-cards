@@ -148,13 +148,20 @@ class DemoSelectionTest extends TestCase
 
         $response = $this->get(route('demo.start', ['mode' => 'check', 'topic_ids' => [$system->id], 'word_ids' => $private->words->modelKeys(), 'learning_profile_id' => $profile->id]));
         $response->assertOk()->assertViewIs('learning.cards')->assertSee('data-demo-check-session', false)
-            ->assertSee('data-check-reveal', false)->assertSee('aria-hidden="true"', false)->assertSee('data-demo-check-next disabled', false)
+            ->assertSee('data-check-reveal', false)->assertSee('aria-hidden="true"', false)->assertSee('data-demo-check-next', false)
             ->assertSee('Пройти ще раз')->assertSee(route('demo.index', ['topic_ids' => [$system->id]]))
-            ->assertDontSee('Знаю')->assertDontSee('Не знаю')->assertDontSee('data-check-stat', false)
+            ->assertSee('Можливості повної версії')->assertSee('Оцінюйте слова кнопками «Знаю» / «Не знаю», повторюйте складні слова та зберігайте свій прогрес')
+            ->assertSee(route('register'))->assertDontSee('data-check-answer=', false)->assertDontSee('data-check-stat', false)
             ->assertDontSee('data-check-session', false)->assertDontSee('data-check-sync', false)
             ->assertDontSee('Private topic')->assertDontSee('privateword');
         $this->assertSame([$word->id], $response->viewData('words')->modelKeys());
         $this->assertSame('привіт', $response->viewData('words')->first()->word_uk);
+        $document = new DOMDocument;
+        $document->loadHTML($response->getContent(), LIBXML_NOERROR | LIBXML_NOWARNING);
+        $xpath = new DOMXPath($document);
+        $this->assertSame(1, $xpath->query('//button[@data-demo-check-next and not(@disabled)]')->length);
+        $this->assertSame(1, $xpath->query('//div[@data-demo-check-content]/section[@class="demo-check-info"]')->length);
+        $this->assertSame(route('register'), $xpath->query('//section[@class="demo-check-info"]//a')->item(0)->getAttribute('href'));
 
         $this->getJson(route('demo.start', ['mode' => 'check', 'topic_ids' => [$system->id, $private->id]]))
             ->assertUnprocessable()->assertDontSee('Private topic')->assertDontSee('privateword');

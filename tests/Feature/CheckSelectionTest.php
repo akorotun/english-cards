@@ -62,7 +62,7 @@ class CheckSelectionTest extends TestCase
         $params = ['topic_ids' => [$system->id, $own->id]];
         $all = $this->get(route('check.selection', $params))->assertOk()->assertSee('4 слова')->assertSee('Почати перевірку');
         $this->assertSame($words->modelKeys(), $all->viewData('words')->modelKeys());
-        $review = $this->get(route('check.start', [...$params, 'needs_review' => 1]))->assertOk()->assertViewIs('learning.cards')->assertSee('data-check-session', false)->assertSee('Показати переклад')->assertDontSee('data-learning-previous', false);
+        $review = $this->get(route('check.start', [...$params, 'needs_review' => 1]))->assertOk()->assertViewIs('learning.cards')->assertSee('data-check-session', false)->assertSee('Показати переклад')->assertSee('data-check-answer="know"', false)->assertSee('data-check-answer="dont_know"', false)->assertDontSee('Можливості повної версії')->assertDontSee('data-learning-previous', false);
         $this->assertSame($words->slice(1)->values()->modelKeys(), $review->viewData('words')->modelKeys());
         $refreshUrl = route('check.start', [...$params, 'needs_review' => 1]);
         $this->getJson($refreshUrl)->assertOk()

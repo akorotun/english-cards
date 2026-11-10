@@ -21,7 +21,7 @@
                     </div>
                     @include('learning.partials.check-card')
                     <div class="learning-controls">
-                        <button class="button button-primary" type="button" data-demo-check-next disabled>Далі →</button>
+                        <button class="button button-primary" type="button" data-demo-check-next>Далі →</button>
                     </div>
                 </div>
                 <div class="panel learning-complete" data-demo-check-complete hidden tabindex="-1">
@@ -31,6 +31,11 @@
                         <a class="button button-secondary" href="{{ $selectionUrl }}">Змінити теми</a>
                     </div>
                 </div>
+                <section class="demo-check-info" aria-labelledby="demo-check-info-title">
+                    <h2 id="demo-check-info-title">Можливості повної версії</h2>
+                    <p>Оцінюйте слова кнопками «Знаю» / «Не знаю», повторюйте складні слова та зберігайте свій прогрес</p>
+                    <a href="{{ route('register') }}">Зареєструватися →</a>
+                </section>
             </div>
         @elseif ($isCheck)
             <p class="notice import-error" role="alert" data-check-error hidden></p>
